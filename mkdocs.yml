@@ -1,0 +1,175 @@
+site_name: Python Backend Engineer Helper
+theme:
+  name: material
+  font:
+    text: Inter
+    code: JetBrains Mono
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.indexes
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Curriculum: CURRICULUM.md
+  - Python:
+      - Overview: python/index.md
+      - Foundation:
+          - Data Types and Collections: python/01-data-types-and-collections.md
+          - Comprehensions and Functions: python/02-comprehensions-and-functions.md
+          - Exceptions: python/03-exceptions.md
+          - Modules and Packages: python/04-modules-and-packages.md
+          - Type Hints: python/05-type-hints.md
+      - Intermediate:
+          - OOP Fundamentals: python/06-oop-fundamentals.md
+          - Dataclasses, Properties, and Dunder Methods: python/07-dataclasses-and-dunder-methods.md
+          - Iterators and Generators: python/08-iterators-and-generators.md
+          - Decorators and Closures: python/09-decorators-and-closures.md
+          - Context Managers and Descriptors: python/10-context-managers-and-descriptors.md
+      - Advanced:
+          - Memory Management: python/11-memory-management.md
+          - GIL and CPython: python/12-gil-and-cpython.md
+          - Asyncio and Concurrency: python/13-asyncio-and-concurrency.md
+          - Performance and Profiling: python/14-performance-and-profiling.md
+  - Python Packaging:
+      - Overview: packaging/index.md
+      - Environments and Installers: packaging/01-environments-and-installers.md
+      - pyproject.toml and Dependency Management: packaging/02-pyproject-and-dependency-management.md
+      - Package Structure and Editable Installs: packaging/03-package-structure-and-editable-installs.md
+  - FastAPI:
+      - Overview: fastapi/index.md
+      - Routing and Request Handling: fastapi/01-routing-and-request-handling.md
+      - Pydantic and Validation: fastapi/02-pydantic-and-validation.md
+      - Dependency Injection: fastapi/03-dependency-injection.md
+      - Middleware and Exception Handling: fastapi/04-middleware-and-exception-handling.md
+      - Authentication and Authorization: fastapi/05-authentication-and-authorization.md
+      - Async Endpoints, Background Tasks, and Lifespan: fastapi/06-async-endpoints-and-background-tasks.md
+      - OpenAPI and Testing: fastapi/07-openapi-and-testing.md
+      - Application Architecture: fastapi/08-application-architecture.md
+  - REST API Engineering:
+      - Overview: rest-api/index.md
+      - HTTP Fundamentals: rest-api/01-http-fundamentals.md
+      - REST Principles and Idempotency: rest-api/02-rest-principles-and-idempotency.md
+      - Pagination, Filtering, and Sorting: rest-api/03-pagination-filtering-sorting.md
+      - API Versioning and Error Handling: rest-api/04-versioning-and-error-handling.md
+      - Rate Limiting and API Security: rest-api/05-rate-limiting-and-api-security.md
+  - Databases:
+      - Overview: databases/index.md
+      - SQL:
+          - Overview: databases/sql/index.md
+          - Querying Fundamentals: databases/sql/01-querying-fundamentals.md
+          - Joins and Aggregation: databases/sql/02-joins-and-aggregation.md
+          - Subqueries, CTEs, and Window Functions: databases/sql/03-subqueries-ctes-and-window-functions.md
+          - Indexes and Query Optimization: databases/sql/04-indexes-and-query-optimization.md
+      - PostgreSQL:
+          - Overview: databases/postgresql/index.md
+          - Database Design and Constraints: databases/postgresql/01-database-design-and-constraints.md
+          - Transactions and ACID: databases/postgresql/02-transactions-and-acid.md
+          - Locks, Deadlocks, and Connection Pooling: databases/postgresql/03-locks-deadlocks-and-connection-pooling.md
+      - SQLAlchemy:
+          - Overview: databases/sqlalchemy/index.md
+          - ORM Models and Sessions: databases/sqlalchemy/01-orm-models-and-sessions.md
+          - Queries, Relationships, and Loading: databases/sqlalchemy/02-queries-relationships-and-loading.md
+          - Transactions and Connection Pools: databases/sqlalchemy/03-transactions-and-connection-pools.md
+          - Async SQLAlchemy and Migrations: databases/sqlalchemy/04-async-sqlalchemy-and-migrations.md
+  - Testing:
+      - Overview: testing/index.md
+      - Pytest Fundamentals: testing/01-pytest-fundamentals.md
+      - Mocking and Monkeypatch: testing/02-mocking-and-monkeypatch.md
+      - Test Strategy and Isolation: testing/03-test-strategy-and-isolation.md
+      - Async Testing: testing/04-async-testing.md
+  - Security:
+      - Overview: security/index.md
+      - Authentication and Password Hashing: security/01-authentication-and-password-hashing.md
+      - JWT, OAuth2, and OIDC: security/02-jwt-oauth2-and-oidc.md
+      - Authorization Models and Least Privilege: security/03-authorization-and-least-privilege.md
+      - Transport and Web Security: security/04-transport-and-web-security.md
+      - Injection Attacks and Secrets Management: security/05-injection-attacks-and-secrets-management.md
+  - Messaging:
+      - Overview: messaging/index.md
+      - Message Queues and Messaging Patterns: messaging/01-message-queues-and-messaging-patterns.md
+      - Kafka Fundamentals: messaging/02-kafka-fundamentals.md
+      - Delivery Semantics and Idempotency: messaging/03-delivery-semantics-and-idempotency.md
+      - Retry Strategies and Dead-Letter Queues: messaging/04-retry-strategies-and-dead-letter-queues.md
+  - Caching:
+      - Overview: caching/index.md
+      - Caching Strategies and TTL: caching/01-caching-strategies-and-ttl.md
+      - Redis in Practice: caching/02-redis-in-practice.md
+      - Cache Invalidation and Distributed Caching: caching/03-cache-invalidation-and-distributed-caching.md
+  - Observability:
+      - Overview: observability/index.md
+      - Logging and Structured Logging: observability/01-logging-and-structured-logging.md
+      - Metrics and Prometheus: observability/02-metrics-and-prometheus.md
+      - Tracing and OpenTelemetry: observability/03-tracing-and-opentelemetry.md
+      - Health Checks and Alerting: observability/04-health-checks-and-alerting.md
+  - Performance:
+      - Overview: performance/index.md
+      - Application Performance Fundamentals: performance/01-application-performance-fundamentals.md
+      - Database Performance in Practice: performance/02-database-performance-in-practice.md
+      - Load Testing: performance/03-load-testing.md
+  - DevOps:
+      - Overview: devops/index.md
+      - Docker:
+          - Overview: devops/docker/index.md
+          - Images, Containers, and Dockerfiles: devops/docker/01-images-containers-and-dockerfiles.md
+          - Volumes, Networks, and Environment Variables: devops/docker/02-volumes-networks-and-environment-variables.md
+          - Docker Compose: devops/docker/03-docker-compose.md
+          - Multi-Stage Builds for Python: devops/docker/04-multi-stage-builds-for-python.md
+      - Kubernetes:
+          - Overview: devops/kubernetes/index.md
+          - Pods, Deployments, and Services: devops/kubernetes/01-pods-deployments-and-services.md
+          - ConfigMaps and Secrets: devops/kubernetes/02-configmaps-and-secrets.md
+          - Ingress and External Access: devops/kubernetes/03-ingress-and-external-access.md
+          - Probes, Resources, and Scaling: devops/kubernetes/04-probes-resources-and-scaling.md
+          - kubectl and Troubleshooting: devops/kubernetes/05-kubectl-and-troubleshooting.md
+      - Helm:
+          - Overview: devops/helm/index.md
+          - Charts and Chart Structure: devops/helm/01-charts-and-chart-structure.md
+          - Templates, values.yaml, and Helpers: devops/helm/02-templates-values-and-helpers.md
+          - Releases and Release Management: devops/helm/03-releases-and-release-management.md
+          - Secrets and Configuration Management: devops/helm/04-secrets-and-configuration-management.md
+      - CI/CD:
+          - Overview: devops/cicd/index.md
+          - Git Workflows and Branching: devops/cicd/01-git-workflows-and-branching.md
+          - "Pipeline Stages: Build, Test, and Package": devops/cicd/02-pipeline-stages-build-test-and-package.md
+          - Docker Builds and Image Registries: devops/cicd/03-docker-builds-and-image-registries.md
+          - Deployment and Rollback Strategies: devops/cicd/04-deployment-and-rollback-strategies.md
+  - System Design:
+      - Overview: system-design/index.md
+      - Scalability, Statelessness, and Scaling Strategies: system-design/01-scalability-statelessness-and-scaling-strategies.md
+      - Load Balancing and Caching at Scale: system-design/02-load-balancing-and-caching-at-scale.md
+      - Databases and Queues at Scale: system-design/03-databases-and-queues-at-scale.md
+      - "CAP Theorem, Consistency, and Availability": system-design/04-cap-theorem-consistency-and-availability.md
+      - Failure Handling and Rate Limiting: system-design/05-failure-handling-and-rate-limiting.md
+  - Interview Preparation:
+      - Overview: interviews/index.md
+      - Python: interviews/01-python.md
+      - FastAPI: interviews/02-fastapi.md
+      - SQL and PostgreSQL: interviews/03-sql-and-postgresql.md
+      - SQLAlchemy: interviews/04-sqlalchemy.md
+      - API Design: interviews/05-api-design.md
+      - System Design: interviews/06-system-design.md
+      - DevOps: interviews/07-devops.md
+      - Behavioral / Project Questions: interviews/08-behavioral-and-project-questions.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
