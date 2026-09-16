@@ -46,6 +46,202 @@ seen: set[int] = {1, 2, 3}
 config: dict[str, str] = {"env": "prod"}
 ```
 
+### Lists — creation, indexing, and slicing
+
+```python
+nums = [10, 20, 30, 40, 50]
+
+nums[0]        # 10        -- first element
+nums[-1]       # 50        -- last element
+nums[1:3]      # [20, 30]  -- slice: start inclusive, stop exclusive
+nums[::2]      # [10, 30, 50] -- every second element
+nums[::-1]     # [50, 40, 30, 20, 10] -- reversed copy
+```
+
+### List methods
+
+| Method | Effect | Example | Result |
+|---|---|---|---|
+| `append(x)` | Add `x` to the end | `nums.append(60)` | `[10, 20, 30, 40, 50, 60]` |
+| `extend(iterable)` | Append every item from `iterable` | `nums.extend([60, 70])` | `[..., 60, 70]` |
+| `insert(i, x)` | Insert `x` before index `i` | `nums.insert(0, 5)` | `[5, 10, 20, ...]` |
+| `remove(x)` | Remove the **first** matching value (raises `ValueError` if absent) | `nums.remove(20)` | `[10, 30, 40, 50]` |
+| `pop(i=-1)` | Remove and return item at index `i` (default: last) | `nums.pop()` | returns `50`, list shrinks |
+| `clear()` | Remove all items | `nums.clear()` | `[]` |
+| `index(x)` | Index of first match (raises `ValueError` if absent) | `nums.index(30)` | `2` |
+| `count(x)` | Number of occurrences of `x` | `nums.count(20)` | `1` |
+| `sort(key=None, reverse=False)` | Sort **in place** | `nums.sort(reverse=True)` | descending order |
+| `reverse()` | Reverse **in place** | `nums.reverse()` | order flipped |
+| `copy()` | Shallow copy | `nums.copy()` | new outer list, same nested refs |
+
+```python
+scores = [88, 95, 72, 61]
+scores.sort()                      # [61, 72, 88, 95] -- mutates in place
+top_two = sorted(scores, reverse=True)[:2]  # sorted() returns a NEW list
+
+# sort() vs sorted(): sort() mutates and returns None; sorted() returns a
+# new list and leaves the original untouched -- a common source of bugs
+# when someone writes `scores = scores.sort()` and gets None.
+```
+
+```python
+# key= for custom sort order -- extremely common in interviews
+users = [{"name": "Ana", "age": 34}, {"name": "Bo", "age": 22}]
+users.sort(key=lambda u: u["age"])
+# [{'name': 'Bo', 'age': 22}, {'name': 'Ana', 'age': 34}]
+```
+
+### Tuples — packing, unpacking, and methods
+
+```python
+point = (10, 20)              # packing
+x, y = point                   # unpacking
+first, *rest = (1, 2, 3, 4)    # star-unpacking: first=1, rest=[2, 3, 4]
+
+# Single-element tuples need a trailing comma -- (10) is just an int
+single = (10,)
+```
+
+A tuple only has **two** methods, precisely because it's immutable — there's
+nothing to mutate, so there's no `append`/`remove`/`sort`.
+
+| Method | Effect | Example | Result |
+|---|---|---|---|
+| `count(x)` | Number of occurrences of `x` | `(1, 2, 2, 3).count(2)` | `2` |
+| `index(x)` | Index of first match | `(1, 2, 2, 3).index(2)` | `1` |
+
+```python
+# Named tuples give tuple immutability with attribute-style access --
+# a lightweight alternative to a class for simple records.
+from collections import namedtuple
+
+Point = namedtuple("Point", ["x", "y"])
+p = Point(10, 20)
+p.x, p.y   # (10, 20)
+```
+
+### Sets — creation and methods
+
+```python
+a = {1, 2, 3}
+b = {3, 4, 5}
+empty = set()   # NOT {} -- {} creates an empty dict, not an empty set
+```
+
+**Mutating methods** (change the set in place):
+
+| Method | Effect | Example | Result |
+|---|---|---|---|
+| `add(x)` | Add a single element | `a.add(4)` | `{1, 2, 3, 4}` |
+| `remove(x)` | Remove `x` (raises `KeyError` if absent) | `a.remove(1)` | `{2, 3, 4}` |
+| `discard(x)` | Remove `x` if present (no error if absent) | `a.discard(99)` | unchanged, no error |
+| `pop()` | Remove and return an arbitrary element | `a.pop()` | removes some element |
+| `clear()` | Remove all elements | `a.clear()` | `set()` |
+| `update(iterable)` | Add all elements from `iterable` | `a.update([5, 6])` | union, in place |
+
+**Set algebra** (each has an operator form and a `*_update` in-place form):
+
+| Method | Operator | Effect | Example |
+|---|---|---|---|
+| `union(b)` | `a \| b` | Elements in either set | `{1,2,3} \| {3,4}` → `{1,2,3,4}` |
+| `intersection(b)` | `a & b` | Elements in both sets | `{1,2,3} & {2,3,4}` → `{2,3}` |
+| `difference(b)` | `a - b` | Elements in `a` but not `b` | `{1,2,3} - {2,3}` → `{1}` |
+| `symmetric_difference(b)` | `a ^ b` | Elements in exactly one set | `{1,2,3} ^ {2,3,4}` → `{1,4}` |
+| `issubset(b)` | `a <= b` | Is `a` entirely contained in `b`? | `{1,2} <= {1,2,3}` → `True` |
+| `issuperset(b)` | `a >= b` | Does `a` contain all of `b`? | `{1,2,3} >= {1,2}` → `True` |
+| `isdisjoint(b)` | — | No overlap at all? | `{1,2}.isdisjoint({3,4})` → `True` |
+
+```python
+active_users = {"alice", "bob", "carol"}
+premium_users = {"bob", "dave"}
+
+active_users & premium_users   # {'bob'} -- active AND premium
+active_users - premium_users   # {'alice', 'carol'} -- active, not premium
+active_users | premium_users   # union of both groups
+```
+
+`frozenset` supports every **non-mutating** set method above (`union`,
+`intersection`, `issubset`, etc.) but none of the mutating ones (`add`,
+`remove`, `update`) — it trades mutability for hashability, which is why a
+`frozenset` (unlike a `set`) can itself be an element of another set or a
+dict key.
+
+### Dictionaries — creation and methods
+
+```python
+user = {"name": "Ana", "age": 30}
+user2 = dict(name="Ana", age=30)          # equivalent, kwargs form
+user3 = dict.fromkeys(["a", "b"], 0)      # {'a': 0, 'b': 0}
+```
+
+| Method | Effect | Example | Result |
+|---|---|---|---|
+| `get(key, default=None)` | Look up `key`, return `default` instead of raising if missing | `user.get("email", "n/a")` | `"n/a"` |
+| `setdefault(key, default)` | Return `user[key]` if present, else insert `default` and return it | `user.setdefault("age", 0)` | `30` (already present) |
+| `update(other)` | Merge another dict/iterable of pairs in place | `user.update({"age": 31})` | `age` becomes `31` |
+| `pop(key, default)` | Remove `key` and return its value (or `default` if absent) | `user.pop("age")` | returns `30`, key removed |
+| `popitem()` | Remove and return the **last inserted** `(key, value)` pair | `user.popitem()` | LIFO order (3.7+) |
+| `keys()` | View of all keys (live, reflects later changes) | `user.keys()` | `dict_keys([...])` |
+| `values()` | View of all values | `user.values()` | `dict_values([...])` |
+| `items()` | View of `(key, value)` pairs | `user.items()` | `dict_items([...])` |
+| `clear()` | Remove all entries | `user.clear()` | `{}` |
+| `copy()` | Shallow copy | `user.copy()` | new outer dict, same nested refs |
+
+```python
+# get() vs [] -- the single most common dict interview question
+user = {"name": "Ana"}
+user["email"]                 # KeyError: 'email'
+user.get("email")             # None -- no exception
+user.get("email", "unknown")  # "unknown" -- explicit default
+
+# setdefault() for grouping/counting patterns
+groups: dict[str, list[str]] = {}
+for name in ["ana", "bo", "aria"]:
+    groups.setdefault(name[0], []).append(name)
+# {'a': ['ana', 'aria'], 'b': ['bo']}
+```
+
+```python
+# Merging dicts (3.9+): the | and |= operators
+defaults = {"timeout": 30, "retries": 3}
+overrides = {"retries": 5}
+config = defaults | overrides      # {'timeout': 30, 'retries': 5}
+defaults |= overrides              # in-place merge, same result mutated in place
+
+# Dict comprehension
+squares = {n: n * n for n in range(5)}   # {0: 0, 1: 1, 2: 4, 3: 9, 4: 16}
+```
+
+```python
+# Iterating a dict -- keys by default, or explicitly via items()/values()
+for key in user:                 # iterates keys
+    ...
+for key, value in user.items():  # iterates (key, value) pairs -- most common
+    ...
+```
+
+### `collections` module: purpose-built alternatives worth knowing
+
+| Type | What it adds over the built-in | Typical use |
+|---|---|---|
+| `defaultdict(factory)` | Auto-creates a default value for a missing key instead of raising `KeyError` | Grouping/counting without `setdefault` boilerplate |
+| `Counter(iterable)` | A dict subclass specialized for counting hashable items | Word frequency, histogram-style tallies |
+| `deque` | A double-ended queue with O(1) appends/pops from **both** ends | Queues, sliding windows (a `list`'s `pop(0)`/`insert(0, x)` are O(n)) |
+
+```python
+from collections import defaultdict, Counter, deque
+
+groups = defaultdict(list)
+groups["a"].append("ana")   # no KeyError, no setdefault needed
+
+word_counts = Counter("mississippi")
+word_counts.most_common(2)  # [('i', 4), ('s', 4)]
+
+queue = deque([1, 2, 3])
+queue.appendleft(0)   # O(1), unlike list.insert(0, 0) which is O(n)
+queue.popleft()        # O(1), unlike list.pop(0) which is O(n)
+```
+
 ### Mutability
 
 Mutable objects (`list`, `dict`, `set`) can be changed in place; their
@@ -127,6 +323,10 @@ print(original["nested"])  # unaffected
   intersection).
 - `dict`: key-based lookups, structured records before reaching for a
   dataclass or Pydantic model.
+- `collections.defaultdict`/`Counter`: grouping or counting patterns that
+  would otherwise need repetitive `setdefault`/manual counting logic.
+- `collections.deque`: a queue or sliding-window buffer needing fast
+  insertion/removal from both ends, where a `list` would be O(n).
 
 ## When NOT to use
 
@@ -144,6 +344,13 @@ print(original["nested"])  # unaffected
 - Assuming `list.copy()` deep-copies nested structures.
 - Modifying a list while iterating over it (skips elements or raises
   `RuntimeError` for other containers like dicts/sets).
+- Confusing `sort()` (mutates in place, returns `None`) with `sorted()`
+  (returns a new list) — writing `scores = scores.sort()` silently sets
+  `scores` to `None`.
+- Using `set()` where insertion order matters — regular dicts preserve
+  insertion order since 3.7, but plain sets never guarantee any order.
+- Writing `empty = {}` intending an empty set — that's an empty `dict`;
+  the correct spelling is `set()`.
 
 ```python
 # Bug: mutating a list while iterating
@@ -166,6 +373,16 @@ nums = [n for n in nums if n % 2 != 0]
    `set`? Why?
 5. Explain shallow vs deep copy with an example involving nested structures.
 6. Why can't you use a `list` as a dictionary key?
+7. What's the difference between `dict.get(key)` and `dict[key]` when the
+   key is missing?
+8. What does `dict.setdefault()` do, and how is it useful for grouping
+   items by a key?
+9. What's the difference between `list.sort()` and the built-in
+   `sorted()`?
+10. When would you reach for `collections.defaultdict` or
+    `collections.Counter` instead of a plain `dict`?
+11. Why is `deque` preferred over `list` for a queue that needs to pop
+    from the front frequently?
 
 ## Senior-level considerations
 
@@ -178,3 +395,7 @@ nums = [n for n in nums if n % 2 != 0]
 - At scale, container choice affects memory footprint: a `dict` has higher
   per-entry overhead than a `list`; for large read-heavy datasets consider
   `array`, `__slots__`, or external stores instead of naive dict/list use.
+- Knowing the time complexity of each method matters as much as knowing it
+  exists — `list.insert(0, x)` and `list.pop(0)` are O(n) because every
+  remaining element shifts, which is exactly the gap `collections.deque`
+  closes with O(1) operations at both ends.

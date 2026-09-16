@@ -112,6 +112,65 @@ without creating a full class). `NewType` creates a distinct type for type
 checkers without runtime cost — useful to avoid mixing up e.g. `UserId` and
 `OrderId`, both plain `int`s.
 
+### More typing constructs
+
+| Construct | Purpose | Example |
+|---|---|---|
+| `Literal["a", "b"]` | Value must be one of a fixed set of literals | `def set_mode(mode: Literal["fast", "slow"]) -> None: ...` |
+| `Final` | Marks a name as not meant to be reassigned/overridden | `MAX_RETRIES: Final = 3` |
+| `Callable[[int, str], bool]` | A function taking `(int, str)` and returning `bool` | `handler: Callable[[Request], Response]` |
+| `Sequence[T]` / `Mapping[K, V]` | Read-only, structural container types (broader than `list`/`dict`) | `def total(items: Sequence[int]) -> int: ...` |
+| `Annotated[T, ...]` | Attach framework metadata to a type without changing it at runtime | `UserId = Annotated[int, "must be positive"]` |
+| type alias (`type X = ...`, 3.12+) | Give a complex type a readable name | `type JSON = dict[str, "JSON"] \| list["JSON"] \| str \| int \| bool \| None` |
+| `@overload` | Describe multiple valid call signatures for one function | see below |
+
+```python
+from typing import Literal, Final, Callable
+
+MAX_RETRIES: Final = 3   # mypy flags any later reassignment as an error
+
+def set_log_level(level: Literal["debug", "info", "warning", "error"]) -> None:
+    ...
+
+set_log_level("info")     # OK
+set_log_level("verbose")  # mypy error: not one of the allowed literals
+
+Handler = Callable[[int], str]
+
+def register(handler: Handler) -> None:
+    ...
+```
+
+```python
+from typing import overload
+
+@overload
+def parse(value: str) -> int: ...
+@overload
+def parse(value: bytes) -> int: ...
+def parse(value):
+    return int(value)
+```
+
+`@overload` lets a type checker verify call sites against multiple precise
+signatures (e.g. "returns `str` when called with `mode='text'`, returns
+`bytes` when called with `mode='binary'`") even though there's only one
+actual runtime implementation.
+
+Annotated is what FastAPI itself increasingly relies on for combining a type
+with framework metadata in one place:
+
+```python
+from typing import Annotated
+from fastapi import Depends, Query
+
+def list_users(
+    limit: Annotated[int, Query(le=100)] = 10,
+    db: Annotated[Session, Depends(get_db)] = ...,
+):
+    ...
+```
+
 ### Static checking
 
 ```bash
@@ -164,6 +223,12 @@ alone. Runtime validation requires a library (Pydantic) or explicit checks.
 5. Why might a large codebase enforce mypy in CI even though Python is
    dynamically typed?
 6. What problem does `NewType` solve that a plain type alias doesn't?
+7. What's the difference between `Literal["fast", "slow"]` and just using
+   `str`? What does it buy you?
+8. What is `@overload` for, given that the actual implementation is a single
+   function?
+9. How does `Annotated` let FastAPI combine a type hint with validation
+   metadata (e.g. `Query(le=100)`) in one place?
 
 ## Senior-level considerations
 

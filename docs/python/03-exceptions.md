@@ -62,6 +62,77 @@ BaseException
 Always catch `Exception`, not `BaseException` — the latter also catches
 `SystemExit`/`KeyboardInterrupt`, which should normally propagate.
 
+### Common built-in exceptions and when they're raised
+
+| Exception | Raised when | Example |
+|---|---|---|
+| `ValueError` | Right type, invalid value | `int("abc")` |
+| `TypeError` | Wrong type entirely | `"a" + 1` |
+| `KeyError` | Missing dict key via `[]` | `{}["missing"]` |
+| `IndexError` | Sequence index out of range | `[1, 2][5]` |
+| `AttributeError` | Attribute/method doesn't exist | `"abc".push()` |
+| `FileNotFoundError` | Path doesn't exist (subclass of `OSError`) | `open("nope.txt")` |
+| `ZeroDivisionError` | Division/modulo by zero | `1 / 0` |
+| `StopIteration` | Iterator exhausted (usually handled internally by `for`) | `next(iter([]))` |
+| `RuntimeError` | Generic error not covered by a more specific type | raised explicitly by libraries |
+| `NotImplementedError` | Abstract method not overridden | called on an ABC's placeholder method |
+
+```python
+try:
+    config["missing_key"]
+except KeyError as exc:
+    print(f"missing config key: {exc}")   # str(exc) is just the key repr
+
+try:
+    [1, 2, 3][10]
+except IndexError as exc:
+    print(f"index error: {exc}")
+```
+
+### Catching multiple exception types
+
+```python
+try:
+    process(payload)
+except (KeyError, ValueError) as exc:
+    # handle either the same way
+    raise HTTPException(status_code=400, detail=str(exc)) from exc
+except TypeError:
+    # handle differently
+    raise HTTPException(status_code=500, detail="internal error")
+```
+
+Order matters: Python checks `except` clauses top-to-bottom and uses the
+first match — a broad `except Exception` placed *before* a specific
+`except ValueError` would shadow it and never let the specific clause run.
+
+### `raise` variants
+
+```python
+raise ValueError("bad input")                 # new exception
+raise ValueError("bad input") from exc          # explicit chaining -- sets __cause__
+raise                                           # re-raise the exception currently being handled, unchanged
+```
+
+```python
+def validate(value: int) -> None:
+    try:
+        assert value > 0
+    except AssertionError:
+        raise   # preserves the original traceback exactly as-is
+```
+
+`raise ... from None` explicitly suppresses the chained context (useful
+when the original low-level exception would be confusing/irrelevant to the
+caller):
+
+```python
+try:
+    int(raw)
+except ValueError:
+    raise ValueError(f"invalid amount: {raw!r}") from None
+```
+
 ### Catching specific vs broad exceptions
 
 ```python
@@ -117,6 +188,34 @@ unrelated exceptions raised concurrently (e.g. from `asyncio.TaskGroup`).
 This is version-dependent — check your target Python version before relying
 on it.
 
+### Context managers for guaranteed cleanup
+
+`with` blocks are the preferred alternative to `try`/`finally` for cleanup —
+`__exit__` runs even if an exception propagates:
+
+```python
+class DatabaseTransaction:
+    def __enter__(self):
+        self.conn = get_connection()
+        return self.conn
+
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:
+        if exc_type is None:
+            self.conn.commit()
+        else:
+            self.conn.rollback()   # runs automatically on any exception
+        self.conn.close()
+        return False   # False = don't suppress the exception; re-raises it
+
+with DatabaseTransaction() as conn:
+    conn.execute("UPDATE accounts SET balance = balance - 100 WHERE id = 1")
+    conn.execute("UPDATE accounts SET balance = balance + 100 WHERE id = 2")
+```
+
+Returning `True` from `__exit__` **suppresses** the exception — useful for
+narrow cases (e.g. `contextlib.suppress`) but easy to misuse if it silently
+swallows errors the caller expected to see.
+
 ## When to use
 
 - Raise exceptions for **exceptional, unexpected** conditions — not for
@@ -169,6 +268,14 @@ def risky() -> str:
    failure modes (not found, validation, permission denied)?
 6. What happens if a `finally` block contains a `return` statement while an
    exception is propagating?
+7. What's the difference between `raise` (bare) and `raise exc` inside an
+   `except` block?
+8. What does returning `True` from `__exit__` do, and why is it risky?
+9. Give an example of a built-in exception that is a subclass of another
+   built-in exception (e.g. `IndexError` vs `LookupError`) — why does that
+   hierarchy matter when writing a broad `except` clause?
+10. What does `raise ... from None` do, and when would you use it over
+    `raise ... from exc`?
 
 ## Senior-level considerations
 
@@ -180,8 +287,8 @@ def risky() -> str:
   permission denied) — often via a marker base class or attribute — so
   retry/backoff logic can decide correctly.
 - Logging exceptions with full context (structured fields, not just the
-  message) is critical for observability — see the Observability section
-  once available.
+  message) is critical for observability — see
+  [Observability: Logging](../observability/01-logging-and-structured-logging.md).
 - Avoid leaking internal exception details (stack traces, DB errors) in API
   responses — map to a safe, generic message while logging the full detail
   internally.

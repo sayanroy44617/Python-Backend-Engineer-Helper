@@ -44,6 +44,60 @@ Prefer a generator expression over a list comprehension when you only need
 to iterate once (e.g. passed to `sum()`, `any()`, `all()`) — it avoids
 materializing the full sequence in memory.
 
+### Common built-in functions used alongside comprehensions
+
+| Function | Effect | Example | Result |
+|---|---|---|---|
+| `map(fn, iterable)` | Apply `fn` to every item, lazily | `list(map(str, [1, 2, 3]))` | `['1', '2', '3']` |
+| `filter(fn, iterable)` | Keep items where `fn` is truthy, lazily | `list(filter(lambda n: n > 1, [1, 2, 3]))` | `[2, 3]` |
+| `zip(*iterables)` | Pair up items positionally, stops at the shortest | `list(zip([1, 2], ["a", "b"]))` | `[(1, 'a'), (2, 'b')]` |
+| `enumerate(iterable, start=0)` | Pair each item with its index | `list(enumerate(["a", "b"]))` | `[(0, 'a'), (1, 'b')]` |
+| `sorted(iterable, key=, reverse=)` | New sorted list (doesn't mutate input) | `sorted([3, 1, 2])` | `[1, 2, 3]` |
+| `any(iterable)` | `True` if at least one item is truthy | `any(n > 5 for n in [1, 6])` | `True` |
+| `all(iterable)` | `True` if every item is truthy | `all(n > 0 for n in [1, 2])` | `True` |
+
+```python
+# map/filter vs. an equivalent comprehension -- comprehensions are usually
+# considered more Pythonic/readable for anything beyond a single function call
+doubled = list(map(lambda n: n * 2, [1, 2, 3]))
+doubled = [n * 2 for n in [1, 2, 3]]           # equivalent, more idiomatic
+
+# zip() is the standard way to iterate two sequences in lockstep
+names = ["ana", "bo"]
+ages = [34, 22]
+for name, age in zip(names, ages):
+    print(f"{name} is {age}")
+
+# enumerate() instead of manual index tracking
+for i, name in enumerate(names, start=1):
+    print(f"{i}. {name}")
+```
+
+```python
+from functools import reduce, partial
+
+# reduce() folds an iterable down to a single value -- less common than
+# map/filter in idiomatic Python, but shows up in interviews
+total = reduce(lambda acc, n: acc + n, [1, 2, 3, 4], 0)  # 10
+
+# partial() pre-fills some arguments, returning a new callable
+add = lambda a, b: a + b
+add_five = partial(add, 5)
+add_five(10)  # 15
+```
+
+### Lambda functions
+
+```python
+square = lambda n: n * n   # equivalent to: def square(n): return n * n
+sorted(users, key=lambda u: u["age"])   # most common real use: a sort key
+```
+
+A `lambda` is restricted to a single expression (no statements, no
+annotations) — anything more complex should be a regular `def` function for
+readability and debuggability (lambdas show up as `<lambda>` in
+tracebacks).
+
 ### Functions and arguments
 
 ```python
@@ -60,6 +114,60 @@ def create_user(
 - `*` forces subsequent arguments to be keyword-only (`is_admin` above) —
   common in production APIs to prevent ambiguous positional calls.
 - `/` (less common) forces preceding arguments to be positional-only.
+
+```python
+def move(x, y, /, *, label: str = "point") -> str:
+    return f"{label}: ({x}, {y})"
+
+move(1, 2)                  # OK -- x, y positional
+move(1, 2, label="origin")  # OK -- label keyword-only
+move(x=1, y=2)               # TypeError -- x, y are positional-only
+```
+
+Positional-only parameters (`/`) are common in built-in functions
+(`len(obj, /)`) and are useful when you want the freedom to rename a
+parameter later without breaking callers who might otherwise pass it by
+keyword.
+
+### Default argument evaluation timing
+
+```python
+import datetime
+
+def log_event(message: str, timestamp=datetime.datetime.now()) -> None:
+    print(timestamp, message)
+
+# Bug: timestamp is computed ONCE, at function definition time, not per call
+log_event("first")   # both calls print the SAME timestamp
+log_event("second")
+
+# Fix: use None as a sentinel and compute the real default inside the body
+def log_event(message: str, timestamp: datetime.datetime | None = None) -> None:
+    timestamp = timestamp or datetime.datetime.now()
+    print(timestamp, message)
+```
+
+This is the same root cause as the mutable-default-argument bug covered in
+[Data Types and Collections](01-data-types-and-collections.md) — default
+argument expressions are evaluated exactly once, whether they're a mutable
+literal (`[]`) or a function call (`datetime.now()`).
+
+### Unpacking arguments at the call site
+
+```python
+def create_user(name: str, email: str, is_admin: bool = False) -> dict:
+    return {"name": name, "email": email, "is_admin": is_admin}
+
+args = ("ana", "ana@example.com")
+kwargs = {"is_admin": True}
+
+create_user(*args, **kwargs)   # unpacks the tuple and dict into the call
+# equivalent to: create_user("ana", "ana@example.com", is_admin=True)
+```
+
+This is the mirror image of `*args`/`**kwargs` in a function *definition*
+(which **collect** arguments into a tuple/dict) — at the *call site*, `*`/`**`
+**spread** an existing iterable/mapping out into individual arguments.
 
 ### `*args` and `**kwargs`
 
@@ -173,6 +281,12 @@ funcs = [lambda i=i: i for i in range(3)]
    `nonlocal`?
 5. Why would you make an argument keyword-only?
 6. How do `*args` and `**kwargs` work under the hood (tuple/dict packing)?
+7. What's the difference between `*args` in a function *definition* versus
+   `*some_list` at a *call site*?
+8. Why is `def f(x, timestamp=datetime.now())` a bug? How do you fix it?
+9. What does `/` mean in a function signature, and where have you seen it
+   used in the standard library?
+10. When would you reach for `functools.partial` instead of a `lambda`?
 
 ## Senior-level considerations
 

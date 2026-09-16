@@ -112,6 +112,23 @@ Common fixes: restructure to remove the cycle (extract shared code to a
 third module), import inside the function body (deferred import), or import
 the module itself rather than a name from it (`import a` then `a.bar`).
 
+### `__name__ == "__main__"`
+
+```python
+# cli.py
+def main() -> None:
+    print("running as a script")
+
+if __name__ == "__main__":
+    main()
+```
+
+When a file is run directly (`python cli.py`), Python sets `__name__` to
+`"__main__"`. When the same file is *imported* (`import cli`), `__name__` is
+`"cli"` instead — so the guarded block only runs on direct execution, not on
+import. This lets a module double as both an importable library and a
+runnable script/CLI entry point without side effects firing on import.
+
 ## When to use
 
 - Split code into modules along **responsibility boundaries** (routing,
@@ -156,6 +173,8 @@ the module itself rather than a name from it (`import a` then `a.bar`).
    top-level code?
 6. What does `__all__` control, and when does it matter (`from module
    import *`)?
+7. What does `if __name__ == "__main__":` guard against, and why does it
+   matter for a file that's both imported and run directly?
 
 ## Senior-level considerations
 
