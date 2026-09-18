@@ -27,6 +27,53 @@ exactly what's being tested, not syntax recall.
 | 11 | What's the practical benefit of type hints if Python doesn't enforce them at runtime? | Static analysis (mypy), editor autocomplete/refactoring support, and documentation of intent — the enforcement happens via tooling (CI-run type checkers) rather than the interpreter, which is a deliberate trade-off, not an oversight. | [Type Hints](../python/05-type-hints.md) |
 | 12 | How would you profile a slow Python function before optimizing it? | Measure first (`cProfile`, `py-spy`, or targeted timing) to find the actual bottleneck rather than guessing — optimizing a function that isn't the bottleneck wastes effort and adds complexity for no benefit. | [Performance and Profiling](../python/14-performance-and-profiling.md) |
 
+## List/dict/set comprehension vs. generator expression
+
+| | Comprehension (`[x for x in ...]`, `{...}`) | Generator expression (`(x for x in ...)`) |
+|---|---|---|
+| **Evaluation** | Eager — builds the full list/dict/set immediately | Lazy — yields one item at a time, on demand |
+| **Memory** | O(n) — entire result held in memory | O(1) — only the current item + iterator state |
+| **Reusable?** | Yes — result is a normal collection, iterate as many times as you like | No — single-pass; exhausted after one full iteration |
+| **Indexing/`len()`** | Supported (it's a real list/dict/set) | Not supported — no `__len__`, no `obj[i]` |
+| **Syntax** | `[ ]`, `{ }`, `{k: v}` | `( )` — and the parens can be dropped when it's the sole argument to a call, e.g. `sum(n*n for n in nums)` |
+| **Typical use** | Need the data more than once, need `len()`/indexing, or result is small | Feeding a single consumer (`sum`, `any`, `all`, `for` loop, another generator) once, especially over large/unbounded data |
+
+**When to use which:**
+
+- Use a **comprehension** when you need the materialized collection itself
+  (return it from a function, pass it to something that indexes/re-iterates
+  it, or it's small enough that eagerness costs nothing).
+- Use a **generator expression** when the data is only consumed once and
+  might be large or unbounded (streaming a DB cursor, reading a large file,
+  short-circuiting with `any()`/`all()` — laziness means you can stop early
+  without ever building the rest).
+
+```python
+# Comprehension: needed multiple times, and callers may index into it
+active_users = [u for u in users if u.is_active]
+first = active_users[0]
+count = len(active_users)
+
+# Generator expression: single pass, and any() short-circuits on first match
+# -- with a comprehension this would build the ENTIRE list before any() even runs
+has_admin = any(u.is_admin for u in users)
+
+# Generator expression avoids loading everything into memory
+total_bytes = sum(len(line) for line in open("huge.log"))
+```
+
+**How they differ under the hood:** a comprehension runs its loop to
+completion synchronously and returns a concrete `list`/`dict`/`set`; a
+generator expression compiles to a generator function and returns a
+generator object immediately, without executing any loop body until the
+first `next()` (implicit in a `for` loop or a call like `sum()`) is
+requested.
+
+See [Comprehensions and Functions](../python/02-comprehensions-and-functions.md)
+for comprehension syntax/mistakes, and
+[Iterators and Generators](../python/08-iterators-and-generators.md) for
+the full generator/iterator protocol, `yield`, and `send()`/`close()`.
+
 ## Live-coding / whiteboard tips
 
 - State your **assumptions about input** out loud before coding (can the
