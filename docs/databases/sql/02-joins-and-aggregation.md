@@ -157,27 +157,74 @@ COUNT(*), COUNT(DISTINCT user_id), SUM(total), AVG(total), MIN(total), MAX(total
 
 1. What's the difference between `INNER JOIN` and `LEFT JOIN`? What
    happens to unmatched rows in each?
+
+   **Answer:** `INNER JOIN` only keeps rows that match in both tables —
+   unmatched rows on either side are dropped. `LEFT JOIN` keeps every row
+   from the left table regardless of a match, filling unmatched right-side
+   columns with `NULL`.
+
 2. Why does putting a condition on the right table in `WHERE` silently
    break a `LEFT JOIN`'s intent?
+
+   **Answer:** `WHERE right.col = 'x'` filters out any row where
+   `right.col` is `NULL` — which is exactly the "no match" rows a
+   `LEFT JOIN` was meant to keep. That condition needs to move into the
+   `ON` clause instead, so the filter runs during the join, not after.
+
+   ```sql
+   -- Wrong: turns LEFT JOIN back into an INNER JOIN
+   SELECT * FROM users u
+   LEFT JOIN orders o ON o.user_id = u.id
+   WHERE o.status = 'shipped';
+
+   -- Right: keeps users with no matching order
+   SELECT * FROM users u
+   LEFT JOIN orders o ON o.user_id = u.id AND o.status = 'shipped';
+   ```
+
 3. What's the difference between `WHERE` and `HAVING`? Why can't you
    filter on `COUNT(*)` in `WHERE`?
+
+   **Answer:** `WHERE` filters individual rows before grouping happens;
+   `HAVING` filters groups after `GROUP BY`/aggregation. `COUNT(*)` only
+   exists after grouping, so it has to be filtered with `HAVING`.
+
 4. How would you find users with more than 10 orders using `GROUP BY`/
    `HAVING`?
+
+   ```sql
+   SELECT user_id, COUNT(*) AS order_count
+   FROM orders
+   GROUP BY user_id
+   HAVING COUNT(*) > 10;
+   ```
+
 5. What is a "fan-out" bug in a join + aggregation query, and how do you
    avoid it?
+
+   **Answer:** Joining a table to a one-to-many related table multiplies
+   rows before you aggregate, so `SUM`/`COUNT` on the "one" side counts
+   duplicates. Fix it by aggregating the "many" side in a subquery/CTE
+   first, then joining the pre-aggregated result.
 
 ## Senior-level considerations
 
 - Join type choice directly affects query plans and performance —
   understanding what indexes support a given join (see
   [Indexes and Query Optimization](04-indexes-and-query-optimization.md))
-  is essential once queries run against real production data volumes.
+  is essential once queries run against real production data volumes. For
+  example, an unindexed foreign key used as a join condition forces a
+  sequential scan on the joined table for every row.
 - The `LEFT JOIN` + `WHERE`-on-right-table bug is common enough in code
   review that many teams treat "does this WHERE clause accidentally negate
   the LEFT JOIN?" as a standard review checklist item for any query
-  touching optional relationships.
+  touching optional relationships. For example, a "users with zero
+  orders" report silently returning zero rows is a classic symptom of this
+  bug.
 - Aggregation performed in the database (vs. in application code after
   fetching all rows) is almost always both faster and more correct under
   concurrent writes — pushing aggregation logic into SQL is a common,
   high-value performance optimization identified during profiling (see
   [Performance and Profiling](../../python/14-performance-and-profiling.md)).
+  For example, fetching 100k order rows into Python just to `sum()` them
+  is far slower than `SELECT SUM(amount) FROM orders` in the database.

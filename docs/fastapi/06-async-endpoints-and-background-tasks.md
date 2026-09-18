@@ -151,28 +151,72 @@ connections under load and defeats the purpose of pooling entirely.
 
 1. What's the practical difference between `async def` and `def` route
    handlers in FastAPI?
+
+   **Answer:** `async def` runs on the event loop, so it only helps when the work inside is actually non-blocking. Plain `def` runs in FastAPI's thread pool, which is usually the safer choice for sync libraries.
+
+   ```python
+   async def fetch_user() -> dict[str, int]:
+       return {"id": 1}
+
+   def parse_report() -> dict[str, bool]:
+       return {"ok": True}
+   ```
 2. Why would a blocking call inside `async def` be worse than the same
    call inside plain `def`?
+
+   **Answer:** In `async def`, a blocking call freezes the event loop, so unrelated requests get stuck too. In plain `def`, FastAPI isolates that blocking work in a worker thread instead of choking the loop.
+
+   ```python
+   import time
+
+   async def bad_endpoint() -> dict[str, bool]:
+       time.sleep(1)
+       return {"ok": True}
+   ```
 3. What is `BackgroundTasks` appropriate for, and where does it fall short
    compared to a real task queue?
+
+   **Answer:** It's fine for quick follow-up work that is okay to lose, like sending a non-critical email or writing a best-effort audit line. It falls short when you need retries, persistence, scheduling, or work to survive a process crash.
+
+   ```python
+   from fastapi import BackgroundTasks
+
+   def enqueue_email(background_tasks: BackgroundTasks, email: str) -> None:
+       background_tasks.add_task(print, f"send welcome email to {email}")
+   ```
 4. Why should a DB connection pool be created in `lifespan` rather than
    inside each request handler?
+
+   **Answer:** A pool is meant to be long-lived and shared; creating one per request defeats pooling and can burn through database connections fast. `lifespan` gives you one setup point at startup and one cleanup point at shutdown.
 5. What replaced `@app.on_event("startup")`, and what problem did that
    change solve?
+
+   **Answer:** The `lifespan` async context manager replaced it. It puts startup and shutdown logic in one explicit place, which makes resource setup and cleanup easier to reason about together.
+
+   ```python
+   from contextlib import asynccontextmanager
+
+   @asynccontextmanager
+   async def lifespan(app):
+       yield
+   ```
 
 ## Senior-level considerations
 
 - Recognizing the `async def` + blocking-call anti-pattern is one of the
   highest-value production debugging skills for FastAPI services — it
   manifests as latency spikes across *unrelated* endpoints, not just the
-  offending one.
+  offending one; for example, one `time.sleep()` in `/reports` can slow down
+  `/health` and `/users` too because they share the same event loop.
 - `BackgroundTasks` vs a real task queue is an architecture decision about
   durability guarantees: BackgroundTasks work runs in-process and is lost
   on crash/restart; a task queue persists work and can retry — choose
   based on whether the operation is genuinely best-effort or must not be
-  lost.
+  lost; for example, "send marketing email" can be best-effort, but "charge
+  card and issue invoice" usually cannot.
 - `lifespan`-managed resources (pools, clients) tie the application's
   resource lifecycle to the process lifecycle — this matters for graceful
   shutdown in containerized/Kubernetes environments, where the process
   needs to drain in-flight requests and close connections cleanly before
-  terminating.
+  terminating; for example, on SIGTERM you want the app to stop taking new
+  traffic, finish current requests, then close the DB pool cleanly.

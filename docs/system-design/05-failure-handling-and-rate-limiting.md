@@ -201,15 +201,41 @@ independent of whether the dependency enforces its own limit.
 
 1. Walk through how a cascading failure propagates through a chain of
    services, and what specific techniques stop it at each stage.
+
+   **Answer:** One downstream service gets slow, callers wait too long, their worker threads or connection pools fill up, and then that slowness spreads upstream. You contain it with short timeouts, bounded retries with backoff, circuit breakers to fail fast, and bulkheads so one bad dependency does not consume shared resources.
+
 2. What's the difference between a circuit breaker's closed, open, and
    half-open states?
+
+   **Answer:** Closed means calls are flowing normally. Open means the breaker has seen enough failures that it stops sending traffic for a while, and half-open means it lets a few test requests through to see whether the dependency has recovered.
+
+   ```python
+   if state == "open":
+       raise DownstreamUnavailable()
+   elif state == "half-open":
+       allow_limited_probe_requests()
+   ```
+
 3. Why is a bulkhead pattern useful even when a circuit breaker is
    already in place?
+
+   **Answer:** A circuit breaker reacts after failures are detected, but a bulkhead protects resource isolation all the time. If one dependency hangs before the breaker trips, its dedicated pool gets hurt, not the threads or connections needed for other healthy dependencies.
+
 4. Why would a service rate-limit its own outbound calls to a downstream
    dependency, rather than relying solely on the dependency's own rate
    limiting?
+
+   **Answer:** Because by the time the downstream starts rejecting traffic, you may have already flooded it and tied up your own workers. Self-limiting outbound calls protects both systems earlier and gives you a predictable ceiling during spikes or bugs.
+
+   ```python
+   if outbound_requests_this_second > 200:
+       return fallback_response()
+   ```
+
 5. When is graceful degradation the right response to a failure, and
    when is it the wrong one?
+
+   **Answer:** It is right when the failed dependency is useful but not critical, like recommendations, avatars, or analytics. It is wrong when returning partial or guessed behavior would break correctness, such as payments, auth decisions, or inventory confirmation.
 
 ## Senior-level considerations
 
@@ -217,13 +243,21 @@ independent of whether the dependency enforces its own limit.
   modes you can anticipate (timeouts, circuit breakers, bulkheads,
   graceful degradation) while accepting that some failures will still
   be novel — the goal is limiting blast radius and enabling fast
-  recovery, not achieving an impossible zero-failure system.
+  recovery, not achieving an impossible zero-failure system — for
+  example, a team may plan for database failover and cache loss but
+  still rely on runbooks and feature flags when an unexpected DNS issue
+  hits multiple services at once.
 - Rate limiting, circuit breakers, and bulkheads all trade a small,
   controlled amount of rejected/degraded service now for avoiding a
   much larger, uncontrolled outage later — this trade-off is often
   counterintuitive to communicate to stakeholders who see "deliberately
-  rejecting some requests" as itself a failure.
+  rejecting some requests" as itself a failure — for example, returning
+  429s to a bursty client for two minutes can protect the checkout
+  database from saturating and keep the rest of the site alive.
 - Post-incident review after a cascading failure should identify not
   just the initial trigger, but which specific containment mechanism
   (or lack thereof) allowed it to propagate — that's usually where the
-  most valuable, durable fix actually lives.
+  most valuable, durable fix actually lives — for example, after a slow
+  search cluster caused an API outage, the lasting fix may be adding a
+  timeout and fallback path in the caller rather than only scaling the
+  search nodes.

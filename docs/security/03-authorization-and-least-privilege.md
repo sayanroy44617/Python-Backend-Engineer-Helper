@@ -185,27 +185,50 @@ after the fact.
 
 1. What's the difference between RBAC and ABAC, and when would you reach
    for each?
+
+   **Answer:** RBAC maps users to fixed roles, so it's the right default when permissions are mostly "admins can do X, editors can do Y." ABAC evaluates attributes like owner, tenant, or department, so you reach for it when access depends on the specific resource or request context.
+
 2. Why is a role check alone often insufficient for multi-tenant or
    per-resource authorization?
+
+   **Answer:** A role tells you what someone can generally do, not whether they should touch this exact record. In a multi-tenant app, an editor may edit invoices, but only inside their own tenant or only the ones they own.
+
+   ```python
+   def can_edit(user_id: int, owner_id: int) -> bool:
+       return user_id == owner_id
+   ```
+
 3. What does the principle of least privilege mean in practice for a
    service account's database credentials?
+
+   **Answer:** Give the service only the database permissions it actually uses in production, nothing broader "just in case." A read-only reporting job should have `SELECT` access, not schema-change or admin rights.
+
 4. Where should authorization checks be enforced, and why is a client-side
    (UI) check never sufficient on its own?
+
+   **Answer:** Enforce authorization on the server, ideally close to the endpoint or policy layer, because the client is fully under the caller's control. Hiding a button in the UI does not stop someone from calling the API directly.
+
 5. Why is auditing authorization decisions (especially denials) valuable
    even in a system that's otherwise working correctly?
+
+   **Answer:** It gives you a clean trail for incident response, support, and compliance work. When something looks off, you want logs that show who tried what, on which resource, and whether the check allowed it.
 
 ## Senior-level considerations
 
 - Authorization model choice (RBAC vs ABAC vs hybrid) should match the
   actual complexity of the domain's access rules — over-engineering a
   full policy engine for simple role-based needs adds unnecessary
-  operational and cognitive overhead.
+  operational and cognitive overhead; for example, an internal admin
+  panel may need only `viewer/editor/admin`, while a multi-tenant
+  document system usually also needs owner and tenant checks.
 - Least privilege is an ongoing discipline, not a one-time setup — access
   reviews (periodically checking that granted permissions still match
   actual need) prevent permission creep as an organization and its
-  systems evolve.
+  systems evolve; for example, a job that used to backfill data may no
+  longer need `UPDATE` rights once it becomes read-only reporting.
 - Centralizing authorization logic (shared dependencies/policy functions,
   audit logging) pays off most clearly during incident response — being
   able to quickly answer "could this compromised credential have accessed
   X" depends entirely on how consistently and legibly authorization was
-  implemented beforehand.
+  implemented beforehand; for example, one shared `require_permission`
+  helper is much easier to audit than 20 slightly different inline checks.

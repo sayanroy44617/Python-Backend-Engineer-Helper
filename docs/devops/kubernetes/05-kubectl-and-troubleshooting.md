@@ -172,13 +172,42 @@ speculating about the cause.
 
 1. What's the difference between `kubectl apply` and `kubectl create`,
    and why does that matter for CI/CD pipelines?
+
+   **Answer:** `kubectl create` is mainly for creating something once and it fails if the resource already exists. `kubectl apply` is declarative and idempotent, which makes it a much better fit for repeatable deploys in CI/CD.
+
+   ```bash
+   kubectl apply -f deployment.yaml
+   kubectl rollout status deployment/api
+   ```
+
 2. Walk through your troubleshooting steps for a Pod stuck in
    `CrashLoopBackOff`.
+
+   **Answer:** First I check `kubectl describe pod` to see restart events and exit reasons, then `kubectl logs --previous` to catch the last crash output. After that, if needed, I inspect config like env vars, secrets, or dependency connectivity because most crash loops come from bad startup config or app boot failures.
+
 3. A Service has Pods that are `Running`, but no traffic reaches them —
    what would you check first?
+
+   **Answer:** I would first check the Service endpoints and the Pod labels, because a Running Pod may still not match the Service selector. Right after that I would check readiness, since Pods that fail readiness are excluded from endpoints even when they are up.
+
+   ```bash
+   kubectl get endpoints <service-name>
+   kubectl describe service <service-name>
+   ```
+
 4. Why is `kubectl logs --previous` important, and when would you need
    it specifically?
+
+   **Answer:** It shows logs from the last terminated container instance, which is often where the real error lives. You need it most when a container is restarting quickly, like in `CrashLoopBackOff`, because the current instance may not have reached the failure point yet.
+
 5. What are the common causes of a Pod stuck in `Pending` state?
+
+   **Answer:** The scheduler usually cannot place it because of missing cluster capacity, resource requests that are too large, node selectors or affinity rules that match no nodes, or taints without matching tolerations. In practice, `kubectl describe pod` events usually tell you which of those is happening.
+
+   ```bash
+   kubectl describe pod <pod-name>
+   kubectl describe nodes
+   ```
 
 ## Senior-level considerations
 
@@ -186,13 +215,13 @@ speculating about the cause.
   *where in the Pod lifecycle* a failure occurs (scheduling → image pull
   → container start → readiness → traffic) — experienced engineers
   narrow down the failing stage almost immediately from symptoms alone,
-  rather than working through every command exhaustively.
+  rather than working through every command exhaustively — for example, seeing `Pending` plus `FailedScheduling` events tells you to inspect capacity and placement rules instead of wasting time in application logs.
 - Relying heavily on `kubectl exec` for debugging is itself a signal of
   an observability gap — mature production setups should make most
   issues diagnosable through logs/metrics/traces alone
   (see [Observability](../../observability/index.md)), without needing an
-  interactive session into a running container.
+  interactive session into a running container — for example, a team adds structured startup logs and readiness metrics after repeated incidents required engineers to shell into Pods just to find missing environment variables.
 - In larger organizations, `kubectl` access itself is often restricted by
   RBAC to specific namespaces/verbs — understanding this is important
   both for troubleshooting under real access constraints and for
-  designing sane operational access policies for a team.
+  designing sane operational access policies for a team — for example, developers may have read-only access in production and need a separate on-call role to perform rollbacks or secret updates.

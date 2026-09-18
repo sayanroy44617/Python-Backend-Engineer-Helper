@@ -150,25 +150,66 @@ deployment or the hundredth.
 
 1. What does a Helm "release" represent that a plain `kubectl apply`
    doesn't track?
+
+   **Answer:** A release is a named, versioned history of everything Helm
+   applied for that install — every upgrade creates a new revision Helm
+   remembers, so you can see what changed and roll back. Plain `kubectl
+   apply` has no built-in history at all.
+
 2. How does `helm rollback` work, and what's the relationship between
    revisions and rollback?
+
+   **Answer:** Helm stores the rendered manifests for every past revision;
+   `helm rollback <release> <revision>` just re-applies an older revision's
+   manifests as a new revision. Nothing is "undone" magically — it's a
+   forward apply of old state.
+
+   ```bash
+   helm rollback my-app 3
+   ```
+
 3. Why is `--atomic` important for production upgrades, and what does it
    actually do on failure?
+
+   **Answer:** `--atomic` tells Helm to automatically roll back to the
+   previous working revision if the upgrade fails or times out, so you don't
+   get stuck with half-applied, broken state in production.
+
+   ```bash
+   helm upgrade my-app ./chart --atomic --timeout 5m
+   ```
+
 4. Why is `helm upgrade --install` the standard pattern in CI/CD
    pipelines rather than `helm install` alone?
+
+   **Answer:** `--install` makes the command idempotent — it installs if the
+   release doesn't exist yet, or upgrades it if it does. That means the same
+   pipeline command works for both the first deploy and every deploy after.
+
 5. What's the difference between chart version, application version, and
    release revision?
+
+   **Answer:** Chart version (`version`) tracks the templates/values
+   changing, app version (`appVersion`) documents which app version is
+   deployed, and release revision is simply an incrementing counter Helm
+   keeps every time you install/upgrade/rollback that specific release.
 
 ## Senior-level considerations
 
 - Release naming and namespace strategy (one release per environment,
   isolated namespaces) is a foundational decision that's expensive to
   change later — get this right early rather than retrofitting isolation
-  onto an already-tangled set of releases.
+  onto an already-tangled set of releases. For example, migrating from one
+  shared namespace with `my-app-dev`/`my-app-prod` releases to separate
+  namespaces later means re-provisioning RBAC and network policies too.
 - `--atomic` upgrades trade a slower failure path (waiting for the full
   timeout before rolling back) for much safer production behavior — this
-  is almost always the right trade-off for anything user-facing.
+  is almost always the right trade-off for anything user-facing. For
+  example, a 5-minute timeout means a bad rollout stays broken for at most
+  5 minutes before Helm reverts it automatically.
 - Relying purely on `helm rollback` for incident response without also
   tracking *why* a release failed (via post-incident review) risks
   repeating the same failure on the next upgrade — rollback is
-  mitigation, not root-cause resolution.
+  mitigation, not root-cause resolution. For example, rolling back a bad
+  config change without fixing the underlying CI validation gap means the
+  same bad config can be pushed again next week.

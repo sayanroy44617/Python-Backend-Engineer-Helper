@@ -214,35 +214,118 @@ alone. Runtime validation requires a library (Pydantic) or explicit checks.
 
 1. Are type hints enforced at runtime? What actually validates types in a
    FastAPI app?
+
+   **Answer:** No. Python mostly ignores annotations at runtime; in FastAPI, request/response validation is typically done by Pydantic based on those annotations.
+
+   ```python
+   def double(value: int) -> int:
+       return value * 2
+
+   print(double("3"))  # "33" at runtime, unless another layer validates input
+   ```
+
 2. What's the difference between `Optional[int]` and `int | None`? Are they
    equivalent?
+
+   **Answer:** They're equivalent in meaning: both say the value can be an `int` or `None`. `int | None` is just the newer, cleaner syntax in modern Python.
+
+   ```python
+   def a(value: Optional[int]) -> int:
+       return value or 0
+
+   def b(value: int | None) -> int:
+       return value or 0
+   ```
+
 3. What is a `Protocol`, and how does it differ from an abstract base
    class?
+
+   **Answer:** A `Protocol` says "anything with this shape is fine," even if it doesn't inherit from anything. An abstract base class is nominal: classes usually opt in by inheriting from it.
+
+   ```python
+   from typing import Protocol
+
+   class SupportsClose(Protocol):
+       def close(self) -> None: ...
+   ```
+
 4. When would you use `TypedDict` instead of a full class or a Pydantic
    model?
+
+   **Answer:** Use `TypedDict` when you want a plain dict with a known shape, usually for lightweight JSON-ish data inside the app. If you need runtime validation, methods, or richer behavior, use Pydantic or a class instead.
+
+   ```python
+   from typing import TypedDict
+
+   class UserRow(TypedDict):
+       id: int
+       email: str
+   ```
+
 5. Why might a large codebase enforce mypy in CI even though Python is
    dynamically typed?
-6. What problem does `NewType` solve that a plain type alias doesn't?
+
+   **Answer:** Because static checks catch contract drift early, before bad assumptions spread across services and teams. In a big codebase, that reduces regressions and makes refactors safer.
+
+ 6. What problem does `NewType` solve that a plain type alias doesn't?
+
+   **Answer:** A plain alias is just another name for the same type, so `UserId = int` doesn't stop mixups. `NewType` gives type checkers a distinct logical type without changing runtime cost.
+
+   ```python
+   from typing import NewType
+
+   UserId = NewType("UserId", int)
+   OrderId = NewType("OrderId", int)
+   ```
+
 7. What's the difference between `Literal["fast", "slow"]` and just using
    `str`? What does it buy you?
+
+   **Answer:** `str` allows any string; `Literal` narrows it to a fixed set of allowed values. That gives better autocomplete and catches invalid modes during type checking.
+
+   ```python
+   from typing import Literal
+
+   def run(mode: Literal["fast", "slow"]) -> None:
+       print(mode)
+   ```
+
 8. What is `@overload` for, given that the actual implementation is a single
    function?
+
+   **Answer:** It's for teaching the type checker multiple valid call shapes when one runtime implementation handles them all. That keeps call sites precise without splitting the function apart.
+
 9. How does `Annotated` let FastAPI combine a type hint with validation
    metadata (e.g. `Query(le=100)`) in one place?
+
+   **Answer:** `Annotated` keeps the real Python type and attaches framework metadata next to it. FastAPI reads both pieces, so one annotation can say "this is an `int`, and it must be `<= 100`."
+
+   ```python
+   from typing import Annotated
+   from fastapi import Query
+
+   Limit = Annotated[int, Query(le=100)]
+   ```
 
 ## Senior-level considerations
 
 - Type hints are a form of documentation that stays in sync with code (unlike
   comments) as long as CI enforces a type checker — treat mypy/pyright
-  failures as build failures in serious projects.
+  failures as build failures in serious projects; for example, a renamed
+  service method should fail CI immediately if callers still use the old
+  return type.
 - FastAPI + Pydantic essentially use type hints as the single source of
   truth for request validation, serialization, and OpenAPI schema
-  generation — understanding this deeply avoids "fighting the framework."
+  generation — understanding this deeply avoids "fighting the framework"; for
+  example, changing `response_model` field types changes validation and docs
+  together.
 - Gradual typing lets you introduce type hints incrementally in a legacy
   codebase; senior engineers use `# type: ignore` sparingly and track it
   (e.g. via mypy's `--strict` mode adopted module by module) rather than
-  disabling checks broadly.
+  disabling checks broadly; for example, you might make `payments/` strict
+  first and leave older admin scripts less strict until they are cleaned up.
 - Behavior here is version-dependent: built-in generic syntax
   (`list[str]`), the `X | Y` union syntax, and newer `typing` features
   require specific minimum Python versions — always check target runtime
-  version compatibility.
+  version compatibility; for example, `int | None` is fine on Python 3.10+
+  but breaks on 3.9 without `from __future__ import annotations`.

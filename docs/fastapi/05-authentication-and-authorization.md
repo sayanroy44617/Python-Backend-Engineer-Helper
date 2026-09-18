@@ -175,25 +175,76 @@ integrations issued limited-scope tokens.
 
 1. What's the difference between authentication and authorization? Give a
    401 vs 403 example.
+
+   **Answer:** Authentication is "who are you?"; authorization is "are you allowed to do this?". Return `401` when the token is missing or bad, and `403` when the token is valid but the user still lacks the required permission.
+
+   ```python
+   from fastapi import HTTPException
+
+   def require_admin(is_authenticated: bool, is_admin: bool) -> None:
+       if not is_authenticated:
+           raise HTTPException(status_code=401, detail="Missing token")
+       if not is_admin:
+           raise HTTPException(status_code=403, detail="Admin role required")
+   ```
 2. What does `OAuth2PasswordBearer` actually do, and what does it *not* do?
+
+   **Answer:** It pulls the bearer token out of the `Authorization` header and marks the route as secured in OpenAPI. It does not verify signature, expiry, issuer, or load the user for you.
+
+   ```python
+   from fastapi import Depends
+   from fastapi.security import OAuth2PasswordBearer
+
+   oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+   def read_token(token: str = Depends(oauth2_scheme)) -> dict[str, str]:
+       return {"token": token}
+   ```
 3. How would you implement a reusable "require this role" check across
    many routes?
+
+   **Answer:** Use a dependency factory so the route declares the required role in one place and the check stays centralized. That keeps the route signature readable and avoids copy-pasting the same `if role not in user.roles` block everywhere.
+
+   ```python
+   from fastapi import Depends, HTTPException
+
+   def require_role(role: str):
+       def dependency(user_roles: set[str] = Depends(lambda: {"admin"})) -> None:
+           if role not in user_roles:
+               raise HTTPException(status_code=403, detail="Forbidden")
+       return dependency
+   ```
 4. Why should token validation happen in a dependency rather than inline
    in every route?
+
+   **Answer:** Because auth is cross-cutting plumbing, not route-specific business logic. A dependency gives you one place to validate tokens, load the user, and apply the same behavior consistently across every protected endpoint.
 5. What are OAuth2 scopes, and when would you use them over simple role
    checks?
+
+   **Answer:** Scopes are narrower permissions carried by the token itself, like `users:read` or `reports:write`. Use them when one identity should get different limited tokens for different clients or integrations instead of one broad role.
+
+   ```python
+   def can_read_users(scopes: list[str]) -> bool:
+       return "users:read" in scopes
+   ```
 
 ## Senior-level considerations
 
 - Centralizing auth as dependencies makes it straightforward to reason
   about which routes are protected and how — a security review can scan
   route signatures for `Depends(get_current_user)`/`Depends(require_role(...))`
-  rather than auditing scattered inline checks.
+  rather than auditing scattered inline checks; for example, `def read_me(user:
+  User = Depends(get_current_user))` is much easier to audit than a route with
+  ad hoc header parsing in the function body.
 - Token validation, expiry, and revocation strategy (e.g. short-lived
   access tokens + refresh tokens, or a token blocklist) is a system design
   decision with real trade-offs between security and complexity — see the
   Security section for
-  [JWT, OAuth2, and OIDC](../security/02-jwt-oauth2-and-oidc.md) depth.
+  [JWT, OAuth2, and OIDC](../security/02-jwt-oauth2-and-oidc.md) depth; for
+  example, a 15-minute access token plus a refresh token reduces blast radius
+  but adds refresh and revocation flows.
 - Authorization logic that only exists at the API boundary is a common gap
   — background jobs, admin scripts, and internal service-to-service calls
-  need the same authorization guarantees, not just HTTP-layer checks.
+  need the same authorization guarantees, not just HTTP-layer checks; for
+  example, a bulk-delete admin script should still call the same policy check
+  before removing user accounts.

@@ -179,26 +179,74 @@ carry vulnerabilities).
 
 1. What problem do multi-stage builds solve that a single-stage
    Dockerfile can't?
+
+   **Answer:** They let you use heavy build-time tooling without shipping it in the final image. In practice, you compile dependencies in one stage, then copy only the runtime artifacts into a smaller, cleaner image.
+
+   ```dockerfile
+   FROM python:3.12 AS builder
+   RUN apt-get update && apt-get install -y build-essential
+   FROM python:3.12-slim
+   COPY --from=builder /app/.venv /app/.venv
+   ```
+
 2. How does `COPY --from=builder` work, and why is naming stages with
    `AS` useful?
+
+   **Answer:** It copies files from an earlier stage's filesystem, not from your laptop. Naming stages with `AS builder` makes the Dockerfile easier to read and safer to maintain than relying on numeric stage indexes.
+
+   ```dockerfile
+   FROM python:3.12 AS builder
+   FROM python:3.12-slim AS runtime
+   COPY --from=builder /app/.venv /app/.venv
+   ```
+
 3. Why might a package need a `-dev` header package at build time but
    only a plain runtime library at container runtime?
+
+   **Answer:** The compiler needs header files and development tooling to build the package, but once the binary is built, the app usually only needs the shared library to load it. A common example is compiling a PostgreSQL driver with `libpq-dev` and then running it with just `libpq5`.
+
+   ```dockerfile
+   RUN apt-get install -y libpq-dev   # build stage
+   RUN apt-get install -y libpq5      # runtime stage
+   ```
+
 4. What's the benefit of running your test suite as a build stage rather
    than only as a separate CI step?
+
+   **Answer:** It makes test success part of image creation, so a failing test means no image gets produced at all. That is useful as a hard safety rail, even if CI also runs the same tests separately.
+
+   ```dockerfile
+   RUN uv run pytest
+   ```
+
 5. What real-world impact does a smaller final image size have beyond
    just disk space?
+
+   **Answer:** Smaller images pull faster, start faster on fresh nodes, and usually contain fewer packages to patch or scan for vulnerabilities. That matters more in real systems where many deployments and autoscaling events happen every day.
+
+   ```bash
+   docker image ls
+   docker pull my-api:latest
+   ```
 
 ## Senior-level considerations
 
 - Multi-stage builds are one of the highest-leverage, lowest-risk
   Dockerfile optimizations available — meaningfully smaller, more secure
   images for a modest amount of added Dockerfile structure, making them
-  close to a default best practice for production Python images.
+  close to a default best practice for production Python images. For
+  example, replacing a single-stage `python:3.12` image with a builder +
+  `python:3.12-slim` runtime stage can cut hundreds of MB without
+  changing application code.
 - Image size and attack surface reduction compound at scale — across
   hundreds of deployments and image pulls, a smaller image measurably
   improves deployment speed and reduces the vulnerability surface an
-  organization has to track and patch.
+  organization has to track and patch — for example, shrinking an image
+  from 450MB to 180MB saves time every time a new node pulls it during a
+  rollout or autoscaling event.
 - Treating the Dockerfile itself as build automation (running tests,
   linting, or other CI-style checks as intermediate stages) blurs the
   line between "build" and "CI" in a useful way — a broken build failing
-  to even produce an image is a strong, hard-to-bypass guarantee.
+  to even produce an image is a strong, hard-to-bypass guarantee. For
+  example, `RUN uv run pytest` in the builder stage stops `docker build`
+  before any deployable runtime image exists.

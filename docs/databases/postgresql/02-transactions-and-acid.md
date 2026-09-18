@@ -162,13 +162,44 @@ for how it maps onto the ORM session lifecycle.
 ## Interview questions
 
 1. What do the four ACID properties each guarantee?
+
+   **Answer:** Atomicity — a transaction's operations all happen or none
+   do. Consistency — a transaction only moves the DB between valid states
+   (constraints hold). Isolation — concurrent transactions don't see each
+   other's half-finished work. Durability — once committed, it survives a
+   crash/power loss.
+
 2. What's the difference between a dirty read, a non-repeatable read, and
    a phantom read?
+
+   **Answer:** Dirty read = seeing another transaction's *uncommitted*
+   change. Non-repeatable read = re-reading the same row twice in one
+   transaction and getting different values because another transaction
+   committed a change in between. Phantom read = re-running the same
+   query twice and getting a different *set of rows* because rows were
+   inserted/deleted in between.
+
 3. What is PostgreSQL's default isolation level, and which anomalies does
    it still allow?
+
+   **Answer:** `READ COMMITTED`. It prevents dirty reads but still
+   allows non-repeatable reads and phantom reads — each statement sees a
+   fresh snapshot, but two statements in the same transaction can see
+   different data.
+
 4. Why must application code be prepared to retry a transaction under
    `SERIALIZABLE` isolation?
+
+   **Answer:** `SERIALIZABLE` gives the strongest guarantee by detecting
+   conflicts and aborting one of the conflicting transactions rather than
+   letting an anomaly happen — so the app has to catch that
+   serialization-failure error and retry the transaction from scratch.
+
 5. Why should transactions be kept as short as possible?
+
+   **Answer:** A long transaction holds locks and an open connection the
+   whole time, blocking other transactions and tying up a pool slot — the
+   longer it runs, the more it drags down overall concurrency.
 
 ## Senior-level considerations
 
@@ -176,12 +207,20 @@ for how it maps onto the ORM session lifecycle.
   guarantees and throughput/complexity — defaulting to the strongest level
   everywhere hurts concurrency; defaulting to the weakest everywhere risks
   subtle bugs under real concurrent load. Choose per-operation based on
-  actual risk.
+  actual risk. For example, a financial ledger write might use
+  `SERIALIZABLE` while a page-view counter increment is fine at `READ
+  COMMITTED`.
 - Long-running transactions are a common root cause of production
   incidents (lock contention, connection pool exhaustion, replication lag)
   — a senior engineer reviewing a slow endpoint should check transaction
-  duration and scope as a first step.
+  duration and scope as a first step. For example, a transaction that
+  opens a DB connection, then makes a slow external HTTP call before
+  committing, can hold locks and a pool slot for seconds instead of
+  milliseconds.
 - Understanding isolation anomalies concretely (not just by name) is
   essential for diagnosing "impossible" bugs that only appear under
   concurrent load — these are exactly the kind of intermittent, hard-to-
-  reproduce issues that isolation-level gaps produce in production.
+  reproduce issues that isolation-level gaps produce in production. For
+  example, a "the count was right in my query but wrong in the report a
+  second later" bug is often just a phantom read, not a mysterious data
+  corruption issue.

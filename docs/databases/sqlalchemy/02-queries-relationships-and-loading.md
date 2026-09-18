@@ -165,26 +165,62 @@ issues — the most direct way to catch an N+1 before it reaches production.
 
 1. What causes the N+1 query problem in an ORM, and how would you detect
    it in development?
+
+   **Answer:** Fetching a list of parent rows, then accessing a
+   lazy-loaded relationship on each one in a loop, triggers a separate
+   query per parent (1 + N total). You can spot it by turning on SQL echo
+   logging (`echo=True`) or an APM query counter and watching the query
+   count explode relative to the number of rows.
+
 2. What's the difference between `selectinload` and `joinedload`? When
    would you choose one over the other?
+
+   **Answer:** `selectinload` runs a second, separate `SELECT ... WHERE
+   id IN (...)` to fetch related rows in bulk — no duplication, good
+   default for one-to-many. `joinedload` fetches everything in a single
+   `JOIN`ed query — one round trip, but duplicates parent columns per
+   child row, so it's better for one-to-one/many-to-one.
+
 3. Why can `joinedload` cause row "fan-out" on a one-to-many relationship?
+
+   **Answer:** A `JOIN` produces one result row per matching child, so a
+   user with 5 orders comes back as 5 rows, each repeating the user's
+   columns — the same fan-out issue as a plain SQL join, just from the ORM.
+
 4. What does `back_populates` do, and what happens if you forget it?
+
+   **Answer:** It keeps both sides of a relationship in sync in Python
+   memory — appending a child updates the parent's collection and vice
+   versa. Forget it and the two sides can silently disagree until you
+   re-query from the DB.
+
 5. Why might you want a relationship's default loading strategy to differ
    from what a specific query actually needs?
+
+   **Answer:** A relationship's default (set on the model) is a
+   reasonable general-purpose choice, but a specific query might need more
+   or less data — you override it per-query with `.options(selectinload
+   (...))` rather than changing the model-wide default for every caller.
 
 ## Senior-level considerations
 
 - N+1 query bugs are one of the most common, highest-impact performance
   issues in ORM-backed backend services — reviewing new endpoints for
   relationship access inside loops (and verifying with SQL echo logging or
-  APM query counts) is a standard part of a thorough code review.
+  APM query counts) is a standard part of a thorough code review. For
+  example, `for user in users: print(user.orders)` in a template or
+  serializer is a textbook N+1 waiting to happen.
 - Loading strategy choice interacts directly with the join/fan-out
   concerns from
   [Joins and Aggregation](../sql/02-joins-and-aggregation.md) — understanding
   the underlying SQL each strategy generates (not just the ORM API) is
-  necessary to reason about performance correctly.
+  necessary to reason about performance correctly. For example, knowing
+  `joinedload` produces a single wide `JOIN` explains why it can be slower
+  than `selectinload` for a parent with hundreds of children.
 - For very large or performance-critical read paths, sometimes bypassing
   the ORM entirely (raw `select()` with only the needed columns, or Core-
   level queries without hydrating full ORM objects) is the right trade-off
   — the ORM's convenience has a real cost in object construction and
-  memory that matters at scale.
+  memory that matters at scale. For example, a dashboard endpoint reading
+  a handful of columns from a huge table can be far faster as a Core
+  query returning tuples than as full hydrated ORM model instances.

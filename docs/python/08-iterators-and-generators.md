@@ -177,25 +177,84 @@ re-create the generator.
 ## Interview questions
 
 1. What's the difference between an iterable and an iterator?
+
+   **Answer:** An iterable is something you can ask for an iterator from, like a `list` or `dict`. An iterator is the object that keeps the iteration state and knows what the next item is.
+
+   ```python
+   items: list[int] = [1, 2, 3]
+   iterator = iter(items)
+   print(next(iterator))  # 1
+   ```
 2. How does a `for` loop use `iter()` and `next()` under the hood?
+
+   **Answer:** `for` first calls `iter(obj)`, then keeps calling `next()` until it gets `StopIteration`. That's why anything implementing the iterator protocol works in a normal loop.
+
+   ```python
+   values = iter([10, 20])
+   print(next(values))  # 10
+   print(next(values))  # 20
+   ```
 3. Why are generators more memory-efficient than returning a list? Give a
    backend example.
+
+   **Answer:** A generator yields one item at a time instead of building the full result up front, so memory stays flat even for large inputs. Typical backend case: streaming rows from a big query or lines from a log file.
+
+   ```python
+   from collections.abc import Iterator
+
+   def user_ids() -> Iterator[int]:
+       for user_id in range(1_000_000):
+           yield user_id
+   ```
 4. What does `yield from` do, and why is it useful when composing
    generators?
+
+   **Answer:** `yield from` hands control to another iterable or generator so you don't have to write the loop manually. It's mainly about cleaner composition when one generator is just forwarding values from another.
+
+   ```python
+   from collections.abc import Iterator
+
+   def child() -> Iterator[int]:
+       yield from [1, 2]
+   ```
 5. Can you iterate a generator twice? What happens if you try?
+
+   **Answer:** No — a generator is single-use. Once it's exhausted, iterating it again gives you nothing unless you create a fresh generator object.
+
+   ```python
+   gen = (n for n in range(2))
+   print(list(gen))  # [0, 1]
+   print(list(gen))  # []
+   ```
 6. What's the difference between `next(gen)` and `gen.send(value)`?
+
+   **Answer:** `next(gen)` just resumes the generator and asks for the next yielded value. `send(value)` also resumes it, but injects a value back into the paused `yield` expression.
+
+   ```python
+   from collections.abc import Iterator
+
+   def echo() -> Iterator[int]:
+       received = yield 0
+       yield received
+   ```
 
 ## Senior-level considerations
 
 - Generators are the foundation for `async for`/async generators
   (`async def` with `yield`), which are common in async database drivers
   and streaming HTTP responses — understanding sync generators first makes
-  async generators much easier to reason about.
+  async generators much easier to reason about; for example, a FastAPI
+  streaming response can yield chunks one at a time instead of buffering
+  the whole payload.
 - Lazy pipelines (chained generator expressions) can make debugging harder
   since errors surface only when consumed, not when constructed — weigh
-  memory efficiency against debuggability for critical paths.
+  memory efficiency against debuggability for critical paths; for example,
+  `(parse(row) for row in rows)` won't fail until some later consumer
+  actually pulls the bad row.
 - When streaming large query results (e.g. via SQLAlchemy's
   `yield_per`/server-side cursors), understanding the iterator protocol
   explains why the DB connection must stay open for the duration of
   iteration — a common source of "connection already closed" bugs if the
-  generator is only partially consumed.
+  generator is only partially consumed; for example, returning a generator
+  from inside a function after the session context has already exited will
+  usually break on the first real iteration.

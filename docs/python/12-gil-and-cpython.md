@@ -136,13 +136,49 @@ own interpreter and its own GIL.
 ## Interview questions
 
 1. What does the GIL actually protect, and why does CPython have one?
+
+   **Answer:** The GIL makes CPython's interpreter state and reference
+   counting safe by allowing only one thread to run Python bytecode at a
+   time. It exists mostly to keep the runtime simpler and object memory
+   management thread-safe.
 2. Why do threads help I/O-bound Python code but not CPU-bound code?
+
+   **Answer:** I/O-bound threads spend most of their time waiting on the
+   network, disk, or sleep calls, and those waits release the GIL so other
+   threads can run. CPU-bound Python code keeps wanting the GIL to execute
+   bytecode, so threads mostly take turns instead of using multiple cores.
 3. How does `asyncio` achieve concurrency without multiple OS threads?
+
+   **Answer:** `asyncio` runs one event loop that switches between
+   coroutines when they hit an `await` on I/O. The concurrency comes from
+   cooperative scheduling, not parallel CPU execution.
+
+   ```python
+   import asyncio
+
+   async def main() -> None:
+       await asyncio.gather(asyncio.sleep(1), asyncio.sleep(1))
+
+   asyncio.run(main())
+   ```
 4. When would you choose `multiprocessing` over `asyncio` or threads?
+
+   **Answer:** Use `multiprocessing` when the bottleneck is real CPU work
+   and you need multiple cores, like image processing or large batch
+   computations. Each process gets its own interpreter and GIL, so the
+   work can run in parallel.
 5. Is the GIL part of the Python language spec, or a CPython
    implementation detail? Why does that distinction matter?
+
+   **Answer:** The GIL is a CPython runtime detail, not a Python language
+   guarantee. That matters because different implementations or newer
+   CPython builds can have different threading behavior.
 6. What happens if you run CPU-bound work inside an `async def` FastAPI
    route without offloading it?
+
+   **Answer:** You block the event loop, so other requests stop making
+   progress until that CPU-heavy code finishes. The route is `async` in
+   syntax only — operationally it behaves like a single-threaded stall.
 
 ## Senior-level considerations
 
@@ -150,13 +186,16 @@ own interpreter and its own GIL.
   down to a blocking/CPU-bound call inside an `async def` handler starving
   the event loop — recognizing this pattern (and offloading via
   `run_in_executor`/a background worker) is a common senior-level
-  production debugging skill.
+  production debugging skill; for example, a PDF render or Pandas
+  transform inside the request path can make every other request wait.
 - CPython's ongoing "free-threaded" (no-GIL) build effort (PEP 703) may
   change these trade-offs in future Python versions — treat GIL-related
   guidance as tied to the CPython version in use, not a permanent language
-  property.
+  property; for example, "threads won't help CPU work" is true for normal
+  CPython today, but it is not a forever-language rule.
 - Choosing between threads/asyncio/multiprocessing is a system design
   decision that should be driven by profiling the actual workload
   (I/O-bound vs CPU-bound), not by default habit — see
   [Performance and Profiling](14-performance-and-profiling.md) for how to
-  measure before deciding.
+  measure before deciding; for example, an API gateway fits `asyncio`,
+  while image thumbnail generation usually fits a process pool.

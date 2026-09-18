@@ -181,14 +181,51 @@ reasoning through a complex automated system is valuable in itself.
 
 1. What's the difference between continuous delivery and continuous
    deployment, and what does that distinction depend on?
+
+   **Answer:** Continuous delivery means every change is automatically
+   built, tested, and made ready to deploy, but a human still clicks
+   "deploy." Continuous deployment goes one step further and deploys to
+   production automatically once tests pass — the distinction is really
+   whether there's a manual approval gate before production.
+
 2. Compare rolling, blue-green, and canary deployment strategies — what
    problem does each solve, and at what cost?
+
+   **Answer:** Rolling replaces instances gradually with no extra
+   infrastructure but a slower, harder rollback. Blue-green runs two full
+   environments and switches traffic instantly, giving fast rollback at
+   double the infrastructure cost. Canary sends a small percentage of
+   traffic to the new version first, limiting blast radius but requiring
+   good metrics/monitoring to decide when to proceed.
+
 3. Why might `--atomic` not catch every kind of bad deployment, and what
    additional safeguard addresses that gap?
+
+   **Answer:** `--atomic` only catches failures Kubernetes/Helm can detect
+   (pods crashing, timeouts) — it won't catch a deployment that "succeeds"
+   but has a subtle logic bug or elevated error rate. Health checks plus
+   real application-level monitoring/alerting catch that gap.
+
 4. How do feature flags decouple deployment from release, and why is
    that useful?
+
+   **Answer:** Deploying ships the code to production, but a feature flag
+   controls whether it's actually active for users — so you can deploy
+   risky code dark, then flip it on gradually or instantly roll it back
+   without a new deployment at all.
+
+   ```python
+   if feature_flags.is_enabled("new_checkout"):
+       return new_checkout_flow()
+   ```
+
 5. Why is a rehearsed manual rollback procedure still necessary even with
    automated rollback triggers in place?
+
+   **Answer:** Automated triggers only cover failure modes someone thought
+   to detect in advance — a novel failure (e.g. a slow data-corruption bug)
+   might not trip any automated trigger at all, so the team needs to know
+   how to roll back by hand under pressure.
 
 ## Senior-level considerations
 
@@ -196,12 +233,18 @@ reasoning through a complex automated system is valuable in itself.
   a real cost/safety trade-off, not a one-size-fits-all decision — the
   right choice depends on a service's traffic volume, blast-radius
   tolerance, and available infrastructure, and should be revisited as a
-  service's risk profile changes.
+  service's risk profile changes. For example, a low-traffic internal
+  tool may not justify blue-green's double infrastructure cost, while a
+  payments API almost certainly does.
 - Feature flags are a powerful tool for decoupling deploy from release,
   but they add their own complexity (flag proliferation, testing
   combinatorics of flag states) that needs active management, not just
-  adoption.
+  adoption. For example, a codebase with 40 long-lived flags can end up
+  effectively testing exponentially many code paths nobody fully covers.
 - The maturity of a team's CI/CD practice is often best measured by how
   fast and how confidently it can roll back a bad production deployment
   — a fast, well-tested rollback path is arguably more valuable day to
-  day than any specific deployment strategy's sophistication.
+  day than any specific deployment strategy's sophistication. For
+  example, a team that can roll back in under 2 minutes with one command
+  is in a much stronger position during an incident than one debating
+  canary percentages while the site is down.

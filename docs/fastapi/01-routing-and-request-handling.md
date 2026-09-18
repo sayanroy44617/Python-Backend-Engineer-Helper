@@ -178,24 +178,102 @@ grows (see
 
 1. How does FastAPI decide whether a parameter is a path parameter, query
    parameter, or body?
+
+   **Answer:** If the name appears in the path template, it's a path
+   parameter. If the value is a Pydantic model, FastAPI reads it from the
+   body; otherwise it treats it as a query parameter unless you mark it
+   explicitly.
+
+   ```python
+   from fastapi import FastAPI
+   from pydantic import BaseModel
+
+   app = FastAPI()
+   class UserCreate(BaseModel): name: str
+
+   @app.put("/users/{user_id}")
+   def update_user(user_id: int, payload: UserCreate, notify: bool = False) -> dict[str, object]:
+       return {"user_id": user_id, "notify": notify, "name": payload.name}
+   ```
+
 2. What's the difference between using a bare type hint with a default
    value versus `Query(...)` for a query parameter?
+
+   **Answer:** A plain default like `limit: int = 20` is enough for basic
+   optionality. `Query(...)` is what you use when you also want validation
+   rules or OpenAPI metadata such as bounds or descriptions.
+
+   ```python
+   from fastapi import FastAPI, Query
+
+   app = FastAPI()
+
+   @app.get("/items")
+   def list_items(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, int]:
+       return {"limit": limit}
+   ```
+
 3. Why would you use an `APIRouter` instead of registering all routes
    directly on `app`?
+
+   **Answer:** `APIRouter` keeps related endpoints together so the app stays
+   modular as it grows. It also makes shared prefixes, tags, and dependency
+   wiring much easier to manage.
+
+   ```python
+   from fastapi import APIRouter
+   
+   router = APIRouter(prefix="/users", tags=["users"])
+   ```
+
 4. What happens if a client sends a non-numeric value for a path parameter
    typed as `int`?
+
+   **Answer:** FastAPI rejects it during request validation and returns a
+   `422` response before your handler runs. Your business logic never sees
+   the bad value.
+
+   ```python
+   from fastapi import FastAPI
+
+   app = FastAPI()
+
+   @app.get("/users/{user_id}")
+   def get_user(user_id: int) -> dict[str, int]:
+       return {"id": user_id}
+   ```
+
 5. How would you add pagination (`skip`/`limit`) to a list endpoint?
+
+   **Answer:** Put `skip` and `limit` on the route as query parameters with
+   sensible defaults and bounds. Keep the names consistent across endpoints
+   so clients don't have to relearn pagination every time.
+
+   ```python
+   from fastapi import FastAPI, Query
+
+   app = FastAPI()
+
+   @app.get("/items")
+   def list_items(skip: int = 0, limit: int = Query(default=20, le=100)) -> dict[str, int]:
+       return {"skip": skip, "limit": limit}
+   ```
 
 ## Senior-level considerations
 
 - Consistent parameter conventions (e.g. always `skip`/`limit` for
   pagination, always `sort`/`filter` naming) across a large API surface
   reduce cognitive load for API consumers — worth codifying as a team
-  convention, not deciding ad hoc per endpoint.
+  convention, not deciding ad hoc per endpoint. For example, don't use
+  `page_size` on one route and `limit` on another for the same API.
 - Router organization (by resource, by bounded context/domain) is an
   architectural decision that scales or doesn't as the number of endpoints
   grows into the hundreds — plan router/module boundaries early (see
-  [Application Architecture](08-application-architecture.md)).
+  [Application Architecture](08-application-architecture.md)). For
+  example, keep `/users/*` handlers in one router and billing routes in a
+  separate billing module instead of mixing them together.
 - Avoid leaking internal/ORM types through route signatures — decoupling
   request/response schemas from database models keeps the API contract
-  stable even as internal models evolve.
+  stable even as internal models evolve. For example, return a
+  `UserResponse` schema instead of exposing an ORM model that also contains
+  internal flags or database-only fields.

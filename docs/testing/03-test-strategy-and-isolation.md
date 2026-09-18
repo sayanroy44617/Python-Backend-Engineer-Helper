@@ -190,25 +190,65 @@ practical — this is what keeps integration tests meaningful.
 
 1. What's the difference between a unit test and an integration test, and
    when does each catch bugs the other can't?
+
+   **Answer:** A unit test isolates one function/class (mocking its
+   dependencies) and catches logic bugs fast. An integration test runs
+   real components together (real DB, real HTTP call) and catches wiring
+   bugs — mismatched schemas, wrong SQL, a dependency's actual behavior
+   differing from what you assumed when mocking it.
+
 2. Why is an inverted testing pyramid (mostly end-to-end tests) a
    problem, even though those tests give the highest confidence per test?
+
+   **Answer:** End-to-end tests are slow and brittle (any unrelated part
+   of the system breaking fails them), so a suite dominated by them is
+   slow to run and hard to debug — a failure could be anywhere in the
+   stack. Lots of fast, focused unit tests plus a few end-to-end tests
+   gives both speed and confidence.
+
 3. How would you achieve full test isolation for database-touching tests
    without recreating the schema for every single test?
+
+   **Answer:** Create the schema once per test session, then wrap each
+   individual test in a transaction that's rolled back at the end — the
+   test sees a clean-ish state without paying the cost of rebuilding
+   tables every time.
+
 4. What's a flaky test, and why is it worse than having no test at all
    for that behavior?
+
+   **Answer:** A flaky test passes or fails inconsistently without code
+   changes (often due to timing, shared state, or real network calls).
+   It's worse than no test because it trains the team to ignore CI
+   failures ("just rerun it"), which can hide a real bug when it finally
+   does fail for a genuine reason.
+
 5. Where's the right boundary to mock in an integration test — what
    should stay real, and what should be replaced with a test double?
+
+   **Answer:** Keep your own code and its direct collaborators (DB,
+   internal services) real — that's the point of an integration test.
+   Replace things outside your control that are slow, costly, or
+   non-deterministic (third-party payment APIs, external email providers)
+   with a test double.
 
 ## Senior-level considerations
 
 - Test strategy is a deliberate trade-off decision (speed vs. confidence
   vs. maintenance cost), not a default choice — a senior engineer can
   articulate why a given piece of code deserves a unit test, an
-  integration test, or both.
+  integration test, or both. For example, pure business logic
+  (calculating a discount) gets a fast unit test; the endpoint wiring that
+  calls it gets one integration test, not a dozen duplicated unit tests.
 - Flaky tests are a team-wide productivity tax; treating them as
   a p0/high-priority bug to fix (or quarantine) rather than routinely
-  re-running CI is a mark of engineering maturity.
+  re-running CI is a mark of engineering maturity. For example, a team
+  that tags a known-flaky test `@pytest.mark.flaky` and tracks a ticket to
+  fix it (rather than silently re-running CI) keeps the signal
+  trustworthy.
 - CI pipeline design (running fast unit tests first, slower integration/
   API tests in a later stage) reflects the same pyramid thinking applied
   at the pipeline level — fail fast on cheap checks before paying for
-  expensive ones.
+  expensive ones. For example, a pipeline stage ordering unit tests →
+  lint → integration tests → E2E fails a broken PR in seconds instead of
+  minutes.

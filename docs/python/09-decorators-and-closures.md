@@ -185,13 +185,50 @@ the total time across all retries.
 
 1. What is a closure? Give an example where it's used to configure
    behavior (like `make_multiplier`).
+
+   **Answer:** A closure is a function that keeps access to variables from the outer scope after that outer function has returned. It's useful when you want to configure behavior once and reuse the configured callable many times.
+
+   ```python
+   def make_prefix(prefix: str):
+       def format_name(name: str) -> str:
+           return f"{prefix}{name}"
+       return format_name
+   ```
 2. Walk through what `@timed` on a function desugars to.
+
+   **Answer:** `@timed` is just `my_func = timed(my_func)` after Python creates the original function object. The decorator gets the function, wraps it, and returns the replacement callable.
 3. Why is `functools.wraps` important in a decorator?
+
+   **Answer:** It preserves the wrapped function's metadata like `__name__`, `__doc__`, and annotations. That matters for debugging, logging, docs, FastAPI-style introspection, and any framework that inspects the function.
 4. What's a decorator factory, and how does `@retry(times=3)` differ from
    `@retry`?
+
+   **Answer:** A decorator factory is a function that returns a decorator, usually because you need configuration first. So `@retry(times=3)` means "build me a retry decorator with this config," while `@retry` would mean `retry` itself directly accepts the function.
+
+   ```python
+   def tag(label: str):
+       def decorator(func):
+           return func
+       return decorator
+   ```
 5. In what order do stacked decorators apply?
+
+   **Answer:** They apply bottom-up: the decorator closest to the function runs first, then the one above it wraps that result. Read it like nested function calls.
 6. When would you write a class-based decorator instead of a function-based
    one?
+
+   **Answer:** Use a class-based decorator when the wrapper needs richer state or behavior than a couple of closed-over variables. Good examples are counters, registries, or wrappers that need helper methods in addition to `__call__`.
+
+   ```python
+   class Calls:
+       def __init__(self, func) -> None:
+           self.func = func
+           self.count = 0
+
+       def __call__(self) -> str:
+           self.count += 1
+           return self.func()
+   ```
 
 ## Senior-level considerations
 
@@ -199,12 +236,18 @@ the total time across all retries.
   or maintain (e.g. a custom `@cache_response` for an internal API) —
   understanding closures lets you design decorators that compose cleanly
   with `functools.wraps` and correct typing (`ParamSpec` for accurate
-  wrapped signatures).
+  wrapped signatures); for example, if `@require_role("admin")` drops the
+  original signature, your framework may stop generating correct OpenAPI
+  docs.
 - Be cautious with decorators that hold mutable state (counters, caches) in
   concurrent/async contexts — closures capture variables by reference, so
   shared state across concurrent requests needs the same thread/async
-  safety considerations as any other shared mutable state.
+  safety considerations as any other shared mutable state; for example, a
+  request counter stored in a closure can race under multi-threaded workers
+  just like a global variable can.
 - Overuse of decorators for "clever" implicit behavior can hurt
   readability/debuggability in large codebases — prefer explicit
   composition (plain function calls) when the indirection doesn't earn its
-  complexity.
+  complexity; for example, `@validate @authorize @audit @retry @cache`
+  usually hides too much control flow compared with calling a helper inside
+  the function body.

@@ -168,26 +168,66 @@ cost.
 
 1. Why does adding `async`/`await` not help a CPU-bound bottleneck, even
    though it helps I/O-bound code significantly?
+
+   **Answer:** `async`/`await` lets other work run while one task is
+   *waiting* (I/O) — it doesn't make CPU instructions execute faster or
+   in parallel. A CPU-bound task keeps the single event loop thread busy
+   the whole time, so there's no waiting for anything else to fill.
+
 2. Walk through how you'd diagnose whether a slow endpoint is CPU-bound
    or I/O-bound.
+
+   **Answer:** Profile it (`cProfile`/py-spy) and look at where time is
+   actually spent: high time inside your own Python code (loops,
+   computation) points to CPU-bound; high time spent waiting on
+   DB/HTTP/file calls points to I/O-bound. A quick sanity check: CPU-bound
+   work pegs a CPU core near 100%; I/O-bound work leaves the CPU mostly
+   idle while waiting.
+
 3. Why should horizontal scaling generally come *after*, not instead of,
    fixing an N+1 query or missing index?
+
+   **Answer:** Scaling adds more instances to handle the same
+   inefficient work, multiplying infrastructure cost without fixing the
+   root cause — an N+1 query fixed once benefits every request forever,
+   for free, versus paying for more servers indefinitely to paper over it.
+
 4. What is a latency budget, and how does it help prioritize performance
    work?
+
+   **Answer:** A latency budget is the total time allowed for a request
+   (e.g. 200ms), broken down across each step (DB query, external call,
+   serialization). It helps prioritize by showing which piece is eating
+   the most of the budget — that's where optimization actually moves the
+   needle.
+
 5. What are the most common sources of backend performance problems in
    practice, and why do database-related issues usually top the list?
+
+   **Answer:** N+1 queries, missing indexes, and unbounded result sets
+   are the usual suspects. The database tends to dominate because it's
+   the one component doing disk I/O and lock coordination — CPU-bound
+   Python code is comparatively rare in typical CRUD-style backend
+   services.
 
 ## Senior-level considerations
 
 - Performance work should be data-driven and prioritized by actual
   impact (profiler output, latency budgets, cost) — not by intuition or
-  by whichever piece of code is most interesting to optimize.
+  by whichever piece of code is most interesting to optimize. For
+  example, spending a week optimizing a rarely-called function while a
+  hot endpoint's N+1 query goes unnoticed is effort spent in the wrong
+  place.
 - Correctly diagnosing CPU-bound vs I/O-bound bottlenecks — and knowing
   which fix (async, multiprocessing, algorithmic change, caching, more
   hardware) matches which diagnosis — is a foundational skill that
-  prevents wasted engineering effort on the wrong solution.
+  prevents wasted engineering effort on the wrong solution. For example,
+  adding more `asyncio` concurrency to a CPU-bound image-resizing endpoint
+  won't help; offloading it to a process pool will.
 - Performance and cost are often the same conversation at scale — an
   inefficient query or algorithm that "just" needs more hardware to keep
   up is really a recurring infrastructure cost that a fix would
   eliminate; framing performance work this way helps prioritize it
-  against feature work.
+  against feature work. For example, "this N+1 fix saves $2k/month in
+  database instance costs" is a more compelling prioritization argument
+  than "this code is slow."

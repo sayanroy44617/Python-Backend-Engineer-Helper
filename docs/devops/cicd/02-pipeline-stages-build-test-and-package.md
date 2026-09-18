@@ -181,26 +181,63 @@ weaker guarantees.
 
 1. Why should linting/fast checks run before the full test suite in a
    pipeline, rather than in parallel or after?
+
+   **Answer:** Lint/type checks usually take seconds and catch trivial
+   mistakes — failing fast on those saves the time and compute cost of
+   running a slow full test suite on code that was already broken.
+
 2. How would you speed up a CI pipeline whose test suite has grown too
    slow for fast PR feedback?
+
+   **Answer:** Parallelize/shard tests across workers, cache dependency
+   installs, and separate a fast "smoke" subset that runs on every push from
+   a slower full suite that runs less often (e.g. pre-merge or nightly).
+
 3. What's the difference between the build, test, and package stages,
    and what does each stage's output feed into?
+
+   **Answer:** Build compiles/prepares the code, test verifies it behaves
+   correctly, and package bundles the verified artifact (e.g. a Docker
+   image or wheel) for deployment. Each stage should only run if the
+   previous one succeeded, since a later stage's output is only trustworthy
+   if earlier gates passed.
+
 4. Why does caching dependency installation matter for pipeline
    performance, and what's it typically keyed on?
+
+   **Answer:** Reinstalling every dependency from scratch on every run wastes
+   minutes per pipeline run across hundreds of runs a week. It's usually
+   keyed on a hash of the lockfile (e.g. `uv.lock`/`poetry.lock`), so the
+   cache is reused unless dependencies actually changed.
+
+   ```yaml
+   key: deps-${{ hashFiles('uv.lock') }}
+   ```
+
 5. What makes a pipeline stage function as an actual quality gate rather
    than just informational output?
+
+   **Answer:** It has to be a *required, blocking* check — if a stage can
+   fail and the pipeline still proceeds (or a human can merge anyway), it's
+   just a report, not a gate.
 
 ## Senior-level considerations
 
 - Pipeline stage design is a direct trade-off between feedback speed and
   thoroughness — the right balance (what runs on every push vs. only
   pre-merge vs. only nightly) depends on team size, test suite size, and
-  how expensive a slow feedback loop actually is for that team.
+  how expensive a slow feedback loop actually is for that team. For
+  example, a team with a 40-minute suite might run only unit tests per
+  push and reserve integration tests for pre-merge.
 - A pipeline is only as strong as its enforcement — coverage gates, lint
   checks, and required status checks that can be silently bypassed
   (admin merge overrides, non-blocking checks) provide much weaker
-  guarantees than they appear to on paper.
+  guarantees than they appear to on paper. For example, a "required"
+  check marked non-blocking in the branch protection settings gives a
+  false sense of safety.
 - As pipelines grow, treating pipeline configuration itself as code
   (versioned, reviewed, tested where practical) becomes important — a
   broken or misconfigured pipeline is itself an incident, not just a
-  minor inconvenience, once deployment depends on it.
+  minor inconvenience, once deployment depends on it. For example, an
+  unreviewed change to a shared reusable workflow file can silently break
+  deployments for every team using it.

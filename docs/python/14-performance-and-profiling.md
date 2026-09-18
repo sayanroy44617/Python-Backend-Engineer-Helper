@@ -167,25 +167,57 @@ Distinguishing CPU-bound from I/O-bound is the deciding factor for whether
 
 1. Why should you profile before optimizing? Give an example of an
    intuition-driven optimization that turned out to be wrong.
+
+   **Answer:** Because the obvious-looking slow code is often not the real
+   bottleneck. A common miss is rewriting a Python loop for speed when the
+   endpoint is actually spending most of its time waiting on the database.
 2. What's the difference between what `cProfile` and `tracemalloc` each
    measure?
+
+   **Answer:** `cProfile` shows where execution time goes, function by
+   function. `tracemalloc` shows where memory allocations come from, which
+   is what you want when memory keeps climbing.
 3. How would you diagnose whether a slow endpoint is CPU-bound or
    I/O-bound?
+
+   **Answer:** Profile the request and look at where time is spent: if it
+   is mostly your computation functions, it is CPU-bound; if it is mostly
+   socket, DB, HTTP, or waiting time, it is I/O-bound. Pair Python
+   profiling with SQL/query timing or tracing so you do not miss external
+   waits.
 4. What is the N+1 query problem, and why might it not show up clearly in
    a Python-level profiler?
+
+   **Answer:** It's when code does one query to load a set of rows and then
+   one extra query per row to load related data. Python profiling just sees
+   "waiting on DB" repeated many times, so you need query logs or APM to
+   spot the pattern cleanly.
+
+   ```python
+   for user_id in user_ids:
+       load_orders(user_id)  # one extra DB call per user
+   ```
 5. What's the difference between micro-benchmarking (`timeit`) and
    whole-program profiling (`cProfile`)?
+
+   **Answer:** `timeit` is for tiny isolated comparisons, like two ways to
+   build the same list. `cProfile` is for understanding where a real call
+   path spends time across multiple functions.
 
 ## Senior-level considerations
 
 - In production systems, ongoing observability (tracing, APM, structured
   logs with timing) matters more than one-off profiling sessions — you
   need to know *when* a regression happens, not just be able to
-  investigate it after a complaint.
+  investigate it after a complaint; for example, a trace can show that p99
+  latency jumped right after a new downstream API integration shipped.
 - Performance work should be driven by SLOs/latency budgets (e.g. p95/p99
   targets), not by chasing every possible micro-optimization — know when
-  "fast enough" has been reached.
+  "fast enough" has been reached; for example, shaving 2 ms off a helper
+  function is noise if the endpoint already meets its 150 ms p95 target.
 - The biggest wins in backend performance are usually architectural
   (caching, batching, reducing round trips, connection pooling, async I/O)
   rather than Python-level micro-optimization — profiling helps you find
-  which of those applies, rather than optimizing the wrong layer.
+  which of those applies, rather than optimizing the wrong layer; for
+  example, collapsing 50 SQL round trips into 2 usually beats tuning a
+  list comprehension.

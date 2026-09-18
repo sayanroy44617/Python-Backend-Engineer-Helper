@@ -188,12 +188,37 @@ applied at the container level).
 ## Interview questions
 
 1. What's the difference between a Docker image and a container?
+
+   **Answer:** An image is the built artifact; a container is one running instance of that artifact. You can start the same image many times, and each container gets its own isolated process/filesystem view.
+
 2. Why does instruction order in a Dockerfile matter for build speed?
+
+   **Answer:** Docker caches layers in order, so once an early layer changes, every layer after it rebuilds too. Put stable steps first and frequently changing steps later so code edits do not blow away expensive cache.
+
+   ```dockerfile
+   COPY pyproject.toml uv.lock ./
+   RUN uv sync --frozen --no-dev
+   COPY . .
+   ```
+
 3. Why should dependency installation happen before copying application
    source code in a typical Python Dockerfile?
+
+   **Answer:** Dependency files change less often than app code, so Docker can reuse the install layer across normal code edits. If you copy the whole repo first, even a one-line Python change can force a full reinstall.
+
 4. What's the trade-off between `python:3.12-slim` and
    `python:3.12-alpine` as a base image?
+
+   **Answer:** `slim` is usually the safer default because it stays smaller than the full image without Alpine's musl-related compatibility surprises. Alpine can be smaller, but it is more likely to hurt you when Python packages need compiled extensions.
+
 5. Why would you run a containerized process as a non-root user?
+
+   **Answer:** It reduces blast radius if the app is compromised, because the process has fewer privileges inside the container. It is a simple hardening step that usually costs almost nothing.
+
+   ```dockerfile
+   RUN useradd --create-home appuser
+   USER appuser
+   ```
 
 ## Senior-level considerations
 
@@ -201,14 +226,17 @@ applied at the container level).
   caching) and image size/security posture (via base image choice,
   non-root user, minimal copied context) — these are engineering
   decisions with real operational impact, not just boilerplate to copy
-  from a template.
+  from a template. For example, moving `COPY . .` below dependency install
+  often turns a slow full rebuild into a fast cache hit after a code-only change.
 - Reproducibility depends on pinning both the base image tag (avoiding
   a floating `latest` tag) and the application's own dependencies (see
   [pyproject.toml and Dependency Management](../../packaging/02-pyproject-and-dependency-management.md))
   — an unpinned Dockerfile can silently produce a different image on
-  every build as upstream images/packages are updated.
+  every build as upstream images/packages are updated. For example, use
+  `FROM python:3.12.8-slim` with a committed lock file instead of `FROM python:latest`.
 - Image size and layer count affect not just build time but deployment
   speed (pulling a large image onto a new node) and attack surface (more
   installed packages/tools mean more potential vulnerabilities) — both
   are worth actively managing, not incidental side effects of "however
-  the Dockerfile happened to be written."
+  the Dockerfile happened to be written." For example, leaving build tools
+  like `gcc` in the runtime image increases both pull size and patching surface.

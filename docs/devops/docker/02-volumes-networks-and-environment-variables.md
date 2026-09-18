@@ -179,26 +179,52 @@ image can declare `EXPOSE 8000` and still be unreachable if run without
 
 1. Why is a container's own filesystem considered ephemeral, and what
    problem do volumes solve?
+
+   **Answer:** A container's writable layer disappears with the container, so it is the wrong place for durable data. Volumes decouple storage from container lifetime, which is why databases and uploaded files should live there.
+
 2. What's the difference between a named volume and a bind mount, and
    when would you use each?
+
+   **Answer:** A named volume is Docker-managed storage, which is the usual choice for persistent service data. A bind mount maps a host path directly into the container, which is handy in local development when you want code changes to show up immediately.
+
+   ```bash
+   docker run -v pgdata:/var/lib/postgresql/data postgres:16
+   docker run -v $(pwd)/app:/app myapp:1.0
+   ```
+
 3. Why do containers need a user-defined network (rather than the
    default bridge) to reliably resolve each other by name?
+
+   **Answer:** Docker gives you built-in DNS on user-defined networks, so containers can call each other by service name instead of hard-coded IPs. That makes restarts and scaling much less brittle.
+
 4. What does `EXPOSE` in a Dockerfile actually do, and what does it *not*
    do?
+
+   **Answer:** `EXPOSE` documents the port the app listens on, but it does not publish that port to the host. You still need `-p` at runtime if you want traffic from outside the Docker network.
+
+   ```bash
+   docker run -p 8000:8000 myapp:1.0
+   ```
+
 5. Why are environment variables the standard way to configure the same
    image differently across environments?
+
+   **Answer:** They let you keep one immutable image and change only runtime config between dev, staging, and production. That avoids rebuilding the image just because `DATABASE_URL` or `LOG_LEVEL` changed.
 
 ## Senior-level considerations
 
 - Data persistence strategy (which services need volumes, and how those
   volumes are backed up) is a production-readiness concern that's easy to
   overlook until a container restart unexpectedly wipes data that was
-  assumed to be durable.
+  assumed to be durable. For example, a Postgres container may use a named
+  volume, but you still need external backups such as storage snapshots or logical dumps.
 - Container networking design (which services can reach which others,
   over which network) is effectively a lightweight network segmentation
   decision — worth deliberate design in multi-service systems, not just
-  "put everything on one network."
+  "put everything on one network." For example, keep `nginx` on a public-facing
+  network and put `db` on an internal-only network shared only with the API.
 - Treating the container image as immutable and injecting all
   environment-specific behavior via environment variables (the
   "build once, deploy everywhere" principle) is foundational to reliable,
-  repeatable deployments across dev/staging/production.
+  repeatable deployments across dev/staging/production. For example, the same
+  `myapp:1.0` image can run with `LOG_LEVEL=debug` in dev and `LOG_LEVEL=info` in prod.

@@ -183,25 +183,70 @@ happened without changing the actual behavior.
 ## Interview questions
 
 1. What's the difference between `Mock` and `MagicMock`?
+
+   **Answer:** Both auto-create attributes/methods on access, but
+   `MagicMock` additionally implements Python's dunder methods (`__len__`,
+   `__iter__`, `__enter__`, etc.), so it can stand in for objects used in
+   `len(x)`, `for i in x`, or `with x:`. Plain `Mock` doesn't support
+   those out of the box.
+
 2. Why must you patch a dependency where it's *used*, not where it's
    *defined*? Walk through why the "wrong" patch target silently fails.
+
+   **Answer:** `from module import func; func()` binds `func` as a name
+   in *your* module's namespace at import time. Patching `module.func`
+   afterward doesn't touch that already-bound local name — you have to
+   patch `your_module.func` (where it's looked up at call time) for the
+   replacement to actually take effect.
+
 3. What's the practical difference between `unittest.mock.patch` and
    pytest's `monkeypatch`?
+
+   **Answer:** They do similar things (temporarily replace an
+   attribute/function), but `monkeypatch` is a pytest fixture with
+   automatic, guaranteed teardown at the end of the test, while
+   `mock.patch` is typically used as a decorator/context manager you
+   apply yourself. `monkeypatch` also conveniently handles env vars and
+   dict items, not just attributes.
+
 4. When would you use `side_effect` instead of `return_value`?
+
+   **Answer:** `return_value` always returns the same fixed value.
+   `side_effect` lets you return different values on successive calls, or
+   raise an exception, or run custom logic — use it when the mock's
+   behavior needs to vary or simulate a failure.
+
+   ```python
+   mock_call.side_effect = [1, 2, ValueError("boom")]
+   ```
+
 5. How would you deterministically test code that depends on the current
    time?
+
+   **Answer:** Don't call `datetime.now()` directly inside the function —
+   inject the time (pass it as a parameter) or patch the time source in
+   the test, so the test controls exactly what "now" is instead of
+   depending on the real clock.
 
 ## Senior-level considerations
 
 - Excessive mocking is a code smell as much as a testing technique — if
   a unit needs a dozen mocks to test, that's often a signal the unit has
-  too many responsibilities or too tightly coupled dependencies.
+  too many responsibilities or too tightly coupled dependencies. For
+  example, a function needing mocks for a DB, an email client, a payment
+  gateway, and a logger all at once is a strong hint it should be split
+  into smaller, independently testable pieces.
 - Mocking hides real integration bugs (a mocked API client can't tell you
   the real API changed its response shape) — a mature test suite balances
   mocked unit tests with a smaller number of real integration tests that
   catch those gaps (see
-  [Test Strategy and Isolation](03-test-strategy-and-isolation.md)).
+  [Test Strategy and Isolation](03-test-strategy-and-isolation.md)). For
+  example, all unit tests passing against a mocked payment client won't
+  catch the provider renaming a response field last week.
 - Knowing the exact import-resolution mechanics behind "patch where it's
   used" (Python's module namespace binding) is a strong signal of real
   hands-on testing experience versus surface-level familiarity with
-  mocking syntax.
+  mocking syntax. For example, being able to explain *why*
+  `@patch("service.requests.get")` works but `@patch("requests.get")`
+  doesn't (when `service.py` does `import requests`) shows real
+  understanding, not memorized syntax.

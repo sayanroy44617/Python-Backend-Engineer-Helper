@@ -178,13 +178,45 @@ a single request's lifetime, not shared globally across requests.
 
 1. What does the SQLAlchemy Session actually do — what's the "unit of
    work" pattern?
+
+   **Answer:** The Session tracks every object you add/modify/delete
+   in-memory and batches all the resulting SQL into one flush at commit
+   time, instead of sending a statement immediately for every change —
+   that batching-and-committing-together approach is the "unit of work"
+   pattern.
+
 2. What's the difference between `flush()` and `commit()`?
+
+   **Answer:** `flush()` sends pending SQL to the database (so it's
+   visible within the current transaction) but doesn't end the
+   transaction. `commit()` flushes *and* commits the transaction, making
+   changes permanent and visible to others.
+
 3. What is the identity map, and what guarantee does it provide within a
    single session?
+
+   **Answer:** The identity map ensures that querying the same row twice
+   in one session returns the *same Python object*, not two separate
+   copies — so mutating it once is consistent everywhere you reference it
+   in that session.
+
 4. What are the transient/pending/persistent/detached object states, and
    when does `DetachedInstanceError` occur?
+
+   **Answer:** Transient = created but never added to a session.
+   Pending = added, not flushed yet. Persistent = flushed/committed, has a
+   DB row, tracked by a session. Detached = was persistent, but its
+   session closed — accessing a lazy-loaded attribute on it then raises
+   `DetachedInstanceError` because there's no session left to run the
+   query.
+
 5. Why is "one session per request" the standard pattern in a web
    application, rather than one global session?
+
+   **Answer:** A shared global session accumulates state across unrelated
+   requests, risking stale identity-map data and objects leaking between
+   users. A fresh session per request keeps each request's scope isolated
+   and short-lived, matching how a transaction should be scoped.
 
 ## Senior-level considerations
 
@@ -193,12 +225,20 @@ a single request's lifetime, not shared globally across requests.
   correctly — but it also means a session growing very large (loading
   many thousands of objects) has real memory cost; understand when to use
   `session.expire_all()`/bulk operations that bypass the ORM object
-  overhead for large batch operations.
+  overhead for large batch operations. For example, iterating and
+  updating 200k rows through full ORM objects can OOM a worker where a
+  `session.execute(update(...))` bulk statement wouldn't.
 - Session lifecycle bugs (detached instance errors, stale data from an
   overly long-lived session) are among the most common production
   SQLAlchemy issues — tracing them back to session scope and object state
-  is a core debugging skill.
+  is a core debugging skill. For example, returning an ORM object from a
+  FastAPI dependency after its session closed, then accessing a
+  lazy-loaded relationship in the response serializer, is a classic
+  `DetachedInstanceError`.
 - Treating models (`Mapped[...]` declarative classes) as the source of
   truth for schema, paired with Alembic autogenerate for migrations,
   keeps schema evolution reviewable and versioned — critical for any team
-  running the same schema across dev/staging/production environments.
+  running the same schema across dev/staging/production environments. For
+  example, a PR changing a `Mapped[str]` to `Mapped[str | None]` alongside
+  its generated Alembic migration lets reviewers see the model and schema
+  change together.

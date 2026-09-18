@@ -172,27 +172,64 @@ addresses this directly).
 
 1. What's the practical difference between a point-to-point queue and a
    publish/subscribe topic?
+
+   **Answer:** A point-to-point queue delivers each message to exactly
+   one consumer (competing consumers share the work). A pub/sub topic
+   delivers each message to every subscriber independently — one message
+   fans out to many, not to just one.
+
 2. Why does acknowledging a message only after successful processing
    matter for reliability?
+
+   **Answer:** If you ack (mark as done) before processing finishes and
+   the consumer crashes mid-processing, the message is lost forever —
+   the broker already thinks it was handled. Acking after success means a
+   crash leaves the message unacked, so it gets redelivered.
+
 3. How does a message queue help absorb a sudden traffic spike that would
    otherwise overwhelm a downstream service?
+
+   **Answer:** The queue holds incoming messages as a buffer, and the
+   downstream service pulls from it at its own sustainable pace — so a
+   burst of 10,000 requests doesn't have to be processed all at once, it
+   just makes the queue temporarily longer.
+
 4. What are the benefits of an event-driven fan-out architecture over
    direct service-to-service calls?
+
+   **Answer:** The producer doesn't need to know or call every consumer
+   directly — it just publishes an event, and any number of services can
+   subscribe independently. Adding a new consumer later requires zero
+   changes to the producer.
+
 5. Why might strict message ordering be lost when multiple consumers
    compete for messages on the same queue, and how would you preserve it
    when needed?
+
+   **Answer:** With multiple competing consumers, message B can finish
+   processing before message A if A happens to take longer — there's no
+   guarantee of who finishes first. To preserve order for related
+   messages, route them to the same consumer (e.g. by a partition/routing
+   key so all of one entity's events go to one worker).
 
 ## Senior-level considerations
 
 - Choosing between direct synchronous calls, background tasks, and a full
   message queue is an architectural decision driven by durability,
-  ordering, and coupling requirements — not just "make it async."
+  ordering, and coupling requirements — not just "make it async." For
+  example, a "send welcome email" can be a fire-and-forget background
+  task, but "charge the customer" needs the durability guarantees of a
+  real queue.
 - Event-driven fan-out architectures trade coupling for eventual
   consistency and operational complexity (more moving parts, harder
   end-to-end tracing) — a deliberate trade-off, not a free upgrade over
-  synchronous calls.
+  synchronous calls. For example, debugging "why didn't the invoice get
+  generated" now means tracing through a queue and multiple consumers
+  instead of one linear call stack.
 - Message queue reliability is only as good as the consumer's
   acknowledgment discipline and the broker's own durability guarantees —
   understanding exactly when a message is considered "safely delivered"
   by a given broker is essential before depending on it for critical
-  data.
+  data. For example, a broker configured to only persist to disk
+  asynchronously can lose "acked" messages on a crash, which matters a lot
+  for payment events.

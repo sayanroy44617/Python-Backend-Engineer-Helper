@@ -169,27 +169,67 @@ primary.
 
 1. What's your diagnostic order when told "the database is slow" for a
    specific endpoint?
+
+   **Answer:** Start broad and narrow down: check if it's actually the DB
+   (vs. waiting on a connection pool slot), look at slow query logs /
+   `EXPLAIN ANALYZE` for the specific query, check for lock contention,
+   then consider caching or a read replica if the query itself is already
+   optimal.
+
 2. How do you distinguish a genuinely slow query from a request that's
    just waiting for a connection pool slot?
+
+   **Answer:** Check the query's own execution time via `EXPLAIN ANALYZE`
+   or query logs — if that's fast but the request as a whole is slow,
+   time is being spent waiting to *acquire* a connection from the pool,
+   not executing SQL. Pool wait-time metrics (if instrumented) confirm
+   this directly.
+
 3. Why might a query that runs fast in isolation be slow under real
    production load? What would you check?
+
+   **Answer:** In isolation there's no contention — under load, the same
+   query can be blocked by locks from other transactions, competing for
+   CPU/disk I/O with everything else, or waiting for a pool connection.
+   Check lock waits, concurrent transaction volume, and pool saturation,
+   not just the query plan alone.
+
 4. When would caching be the right fix for a database performance
    problem, and when would it just be masking an underlying N+1 or
    missing-index issue?
+
+   **Answer:** Caching is right when the underlying query is already
+   efficient but simply run too often for the same, rarely-changing data.
+   It's masking a real problem if the query itself is inefficient (N+1,
+   missing index) — caching just hides the slowness for cached requests
+   while the first request (and any cache miss) still pays the full,
+   unfixed cost.
+
 5. What's the trade-off introduced by adding a read replica for a
    read-heavy workload?
+
+   **Answer:** You gain read throughput by spreading reads across
+   replicas, but you introduce replication lag — a replica can serve
+   slightly stale data, so anything requiring strict read-your-writes
+   consistency needs to explicitly read from the primary instead.
 
 ## Senior-level considerations
 
 - A consistent, repeatable diagnostic process (query logging → query
   plan → lock contention → pool health → caching → replicas) is more
   valuable than knowing any single fix — it prevents jumping to the wrong
-  solution under production incident pressure.
+  solution under production incident pressure. For example, adding an
+  index under pressure without checking `EXPLAIN ANALYZE` first can add
+  write overhead without fixing the actual slow query.
 - Database performance problems compound with scale — an N+1 pattern that
   was tolerable at low traffic can become a serious incident once traffic
   grows, making it worth fixing proactively (caught via profiling/query
-  logging in development) rather than reactively under load.
+  logging in development) rather than reactively under load. For example,
+  an N+1 that added 50ms at 10 requests/sec can turn into a full outage
+  once traffic hits 500 requests/sec and saturates the connection pool.
 - Read replicas, caching, and query/index optimization address different
   scaling dimensions (read throughput, repeated-read latency, individual
   query efficiency respectively) — a mature system typically applies all
-  three deliberately rather than over-relying on just one.
+  three deliberately rather than over-relying on just one. For example,
+  a read replica won't help if the query itself is still doing a full
+  table scan on every replica too — indexing has to happen regardless.

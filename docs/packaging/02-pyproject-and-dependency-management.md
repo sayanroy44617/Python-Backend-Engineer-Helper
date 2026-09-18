@@ -163,25 +163,65 @@ project itself and are never installed for end users.
 
 1. What's the difference between a version range in `pyproject.toml` and
    what's recorded in a lockfile?
+
+   **Answer:** `pyproject.toml` declares what's *acceptable* (e.g.
+   `fastapi~=0.115.0`); the lockfile records the *exact* version (and all
+   transitive versions) actually resolved and installed. The range can
+   stay loose while the lockfile pins a precise, reproducible snapshot.
+
 2. Explain semantic versioning. Is it enforced by tooling, or a
    convention?
+
+   **Answer:** `MAJOR.MINOR.PATCH` — major = breaking change, minor = new
+   backward-compatible feature, patch = backward-compatible bug fix. It's
+   purely a convention; nothing stops a maintainer from shipping a
+   breaking change in a "patch" release, which is why lockfiles/CI tests
+   matter more than trusting the version number alone.
+
 3. What's the difference between `[project.optional-dependencies]` and
    `[dependency-groups]`?
+
+   **Answer:** Optional extras are for *end users* who opt into extra
+   functionality at install time (`pip install "pkg[postgres]"`).
+   Dependency groups (`dev`, `test`) are for *contributors* working on the
+   project itself and are never installed for someone just using the
+   package.
+
 4. Why would a library maintainer use loose version ranges while an
    application team uses a lockfile with exact pins?
+
+   **Answer:** A library has to stay compatible with whatever versions
+   its many downstream consumers already have installed, so tight pins
+   would cause conflicts everywhere. An application has one deployment
+   target, so pinning exact versions via a lockfile removes ambiguity
+   about what's actually running in production.
+
 5. What does `[build-system]` in `pyproject.toml` actually control?
+
+   **Answer:** It tells tools like `pip`/`uv`/`build` which backend
+   (`setuptools`, `hatchling`, `uv_build`, etc.) knows how to turn your
+   source tree into an installable wheel/sdist — without it, tools
+   wouldn't know how to build the package at all.
 
 ## Senior-level considerations
 
 - Dependency management strategy differs for **libraries** (loose ranges,
   broad compatibility, no lockfile shipped) vs **applications** (exact
   lockfile, reproducible deploys) — conflating the two leads to either
-  overly rigid libraries or fragile, unreproducible applications.
+  overly rigid libraries or fragile, unreproducible applications. For
+  example, a shared internal auth library pinning `httpx==0.27.0` exactly
+  can break every service that depends on a newer `httpx` for something
+  else.
 - Regularly updating dependencies (and re-locking) is a deliberate
   practice, not a one-time setup step — stale dependencies accumulate
   security vulnerabilities; tools like Dependabot/Renovate automate this
-  in CI.
+  in CI. For example, a bot opens a weekly PR bumping `uv.lock`, and CI
+  running the test suite against it catches breakage before a human even
+  looks.
 - `pyproject.toml`'s standardization (PEP 621) was a deliberate move away
   from fragmented tool-specific configs (`setup.py`, `setup.cfg`) —
   understanding this history explains why older codebases you may
   encounter still use `setup.py`, and how to reason about migrating them.
+  For example, a legacy repo with `setup.py` + `setup.cfg` +
+  `requirements.txt` can usually be consolidated into one
+  `pyproject.toml` without changing what actually gets installed.

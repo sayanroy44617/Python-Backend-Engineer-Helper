@@ -182,14 +182,56 @@ path.
 
 1. Why doesn't templating a Secret through Helm solve the problem of
    safely storing its real value?
+
+   **Answer:** Helm still needs the actual secret value from somewhere
+   (a values file, `--set`, or an env var) to render the template, and that
+   source itself — plain-text in Git, shell history, CI logs — is where the
+   real risk lives. Templating just moves the value into YAML; it doesn't
+   protect it.
+
 2. What's the purpose of an `existingSecret`-style override in a
    production-grade chart?
+
+   **Answer:** It lets the chart reference a Secret that already exists in
+   the cluster (created by an external secrets operator or manually) instead
+   of forcing users to pass raw secret values through Helm's own values.
+
+   ```yaml
+   database:
+     existingSecret: "db-credentials"
+   ```
+
 3. How does `helm-secrets`/SOPS allow encrypted values to be safely
    committed to version control?
+
+   **Answer:** SOPS encrypts specific values in a YAML file using a KMS key,
+   so the committed file is unreadable without access to that key. `helm
+   secrets` transparently decrypts it in memory right before Helm renders
+   the chart.
+
+   ```bash
+   helm secrets upgrade my-app ./chart -f secrets.enc.yaml
+   ```
+
 4. What are the risks of passing a secret value via `--set` in a CI/CD
    pipeline, and how would you mitigate them?
+
+   **Answer:** `--set` values often end up visible in shell history, process
+   lists, and CI logs. Mitigate by using `--set-file` pointed at a file the
+   CI system injects securely, or by using `existingSecret`/an operator so
+   Helm never sees the raw value at all.
+
 5. How would you layer base, environment-specific, and secret values
    files together for a single `helm upgrade` command?
+
+   **Answer:** Pass multiple `-f` flags in order from least to most specific
+   — Helm merges them left to right, so the last file wins on overlapping
+   keys.
+
+   ```bash
+   helm upgrade my-app ./chart \
+     -f values.yaml -f values-prod.yaml -f secrets.enc.yaml
+   ```
 
 ## Senior-level considerations
 
@@ -197,14 +239,21 @@ path.
   consumes a Secret" (an `envFrom`/volume reference) from "where that
   Secret's real value comes from" (`existingSecret`, an external secrets
   operator, or an encrypted values file) — conflating the two is one of
-  the most common causes of production secret-handling incidents.
+  the most common causes of production secret-handling incidents. For
+  example, hard-coding a chart to only accept raw values via `--set` makes
+  it impossible to later switch to an external secrets operator without
+  rewriting the templates.
 - Encrypted-values tooling (`helm-secrets`/SOPS) versus dedicated
   external-secrets operators represent different points on the same
   trade-off: values-file encryption keeps everything in the chart/Git
   workflow, while an operator centralizes secret lifecycle management
   outside of Helm entirely — larger organizations often prefer the
-  latter for auditability and rotation.
+  latter for auditability and rotation. For example, an operator can
+  auto-rotate a database password and update the Secret without anyone
+  touching Helm at all.
 - Reviewing what actually ends up rendered (`helm template`) for any
   chart touching secrets is a cheap, high-value habit — it's the
   fastest way to confirm a templating change didn't inadvertently
-  expose or misconfigure a Secret before it reaches a real cluster.
+  expose or misconfigure a Secret before it reaches a real cluster. For
+  example, a misplaced `{{ .Values.dbPassword }}` in a ConfigMap instead
+  of a Secret would show up immediately in the rendered output.

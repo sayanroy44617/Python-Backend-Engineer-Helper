@@ -164,6 +164,9 @@ class UserNotFoundError(DomainError):
 
 class InsufficientBalanceError(DomainError):
     pass
+
+'''CustomException in python should end with error not exception
+   UserNotFoundError not UserNotFoundException(java style)'''
 ```
 
 A custom hierarchy lets calling code catch broadly (`except DomainError`) or
@@ -241,6 +244,29 @@ swallows errors the caller expected to see.
 
 - Catching `Exception` too broadly and hiding real bugs.
 - Losing the original traceback by re-raising without `from exc`.
+```python
+#gives error like during handling exception another exception is raised
+def fetch_user_data(user_id: int):
+    try:
+        # Imagine this fails with a KeyError or DatabaseError
+        user = {}["missing_key"]
+    except KeyError as exc:
+        # ❌ BAD: Raising a new exception without chaining
+        raise ValueError("Failed to fetch user profile")
+
+fetch_user_data(1)
+
+
+# this gives the proper traceback
+def fetch_user_data(user_id: int):
+    try:
+        user = {}["missing_key"]
+    except KeyError as exc:
+        # ✅ GOOD: Explicitly chain the original exception
+        raise ValueError("Failed to fetch user profile") from exc
+
+fetch_user_data(1)
+```
 - Using mutable default state inside custom exceptions incorrectly (rare,
   but same mutable-default pitfall as functions applies to `__init__`).
 - Forgetting that `finally` runs even when a function `return`s from inside
@@ -259,36 +285,130 @@ def risky() -> str:
 
 1. What's the difference between `Exception` and `BaseException`? Why does
    it matter which one you catch?
+
+   **Answer:** `Exception` is the normal application-error branch; `BaseException`
+   also includes things like `SystemExit` and `KeyboardInterrupt`. Catching
+   `BaseException` is usually too broad because it can stop shutdown and interrupt handling.
+
+   ```python
+   try:
+       raise ValueError("bad input")
+   except Exception:
+       print("handled")
+   ```
 2. What does `raise ... from exc` do, and why is it useful?
+
+   **Answer:** It explicitly chains a higher-level exception to the original
+   one so the traceback keeps both layers. That's useful when translating a
+   low-level failure into a domain or API-level error.
+
+   ```python
+   try:
+       int("x")
+   except ValueError as exc:
+       raise ValueError("invalid user id") from exc
+   ```
 3. When does `else` in a try/except block execute, versus putting that code
    directly after the `try`?
+
+   **Answer:** `else` runs only if the `try` block completed without raising.
+   It keeps success-only logic separate from the code that might fail.
+
+   ```python
+   try:
+       value: int = int("12")
+   except ValueError:
+       print("bad input")
+   else:
+       print(value)
+   ```
 4. Why is `except Exception: pass` considered a serious anti-pattern in
    production code?
+
+   **Answer:** It hides real failures and removes the signal you need for
+   debugging, alerting, and retries. In production, swallowed exceptions often
+   turn into silent data loss or stuck workflows.
 5. How would you design an exception hierarchy for a service with multiple
    failure modes (not found, validation, permission denied)?
+
+   **Answer:** Create a shared domain base class, then add specific subclasses
+   per failure mode so callers can catch broadly or narrowly. That keeps error
+   mapping centralized instead of scattering `if "not found"` checks around.
+
+   ```python
+   class DomainError(Exception): ...
+   class NotFoundError(DomainError): ...
+   class PermissionDeniedError(DomainError): ...
+   ```
 6. What happens if a `finally` block contains a `return` statement while an
    exception is propagating?
+
+   **Answer:** The `return` from `finally` wins and the original exception gets
+   swallowed. That's why `return` inside `finally` is almost always a bug.
+
+   ```python
+   def broken() -> str:
+       try:
+           raise ValueError("boom")
+       finally:
+           return "hidden"
+   ```
 7. What's the difference between `raise` (bare) and `raise exc` inside an
    `except` block?
+
+   **Answer:** Bare `raise` re-raises the current exception and preserves the
+   original traceback. `raise exc` raises that exception object again and can
+   make the traceback noisier or less direct.
 8. What does returning `True` from `__exit__` do, and why is it risky?
+
+   **Answer:** It tells the context manager to suppress the exception instead
+   of letting it propagate. That's risky because callers may think the block
+   succeeded when it actually failed.
+
+   ```python
+   class Swallow:
+       def __exit__(self, exc_type, exc, tb) -> bool:
+           return True
+   ```
 9. Give an example of a built-in exception that is a subclass of another
    built-in exception (e.g. `IndexError` vs `LookupError`) — why does that
    hierarchy matter when writing a broad `except` clause?
+
+   **Answer:** `IndexError` is a subclass of `LookupError`, so catching
+   `LookupError` handles list indexing errors and dict key lookup errors in one
+   place. The hierarchy matters because a broader base class may catch more than you intended.
+
+   ```python
+   try:
+       [1, 2][5]
+   except LookupError:
+       print("lookup failed")
+   ```
 10. What does `raise ... from None` do, and when would you use it over
     `raise ... from exc`?
+
+   **Answer:** It suppresses the original exception context and shows only the
+   new error. Use it when the low-level cause would just confuse the caller and
+   adds no value to the API surface.
 
 ## Senior-level considerations
 
 - A well-structured exception hierarchy is part of your service's public
   contract — changing it (renaming, removing a subclass) can be a breaking
-  change for consumers who catch specific types.
+  change for consumers who catch specific types. Example: if SDK users catch
+  `PaymentDeclinedError`, replacing it with a generic `PaymentError` is a real
+  compatibility break.
 - In distributed systems, distinguish **retryable** errors (timeouts,
   connection resets) from **non-retryable** ones (validation errors,
   permission denied) — often via a marker base class or attribute — so
-  retry/backoff logic can decide correctly.
+  retry/backoff logic can decide correctly. Example: `class RetryableError(Exception): ...`
+  lets worker code retry `UpstreamTimeoutError` but fail fast on `ValidationError`.
 - Logging exceptions with full context (structured fields, not just the
   message) is critical for observability — see
   [Observability: Logging](../observability/01-logging-and-structured-logging.md).
+  Example: log `order_id`, `user_id`, and `payment_provider` with the exception,
+  not just `"payment failed"`.
 - Avoid leaking internal exception details (stack traces, DB errors) in API
   responses — map to a safe, generic message while logging the full detail
-  internally.
+  internally. Example: return `"detail": "internal server error"` to the client,
+  while logs keep the original `psycopg` or SQLAlchemy traceback.

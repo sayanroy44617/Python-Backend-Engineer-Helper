@@ -192,14 +192,45 @@ messaging system second; a traditional queue is built around
 
 1. What's the difference between a Kafka partition and a Kafka topic, and
    why does ordering only apply within a partition?
+
+   **Answer:** A topic is the logical stream name; a partition is one
+   physical, ordered log that a topic is split into for parallelism.
+   Kafka only guarantees order within a single partition — across
+   partitions, messages can be processed in any relative order since
+   they're independent logs.
+
 2. How does a Kafka consumer group provide both load balancing (within a
    group) and independent parallel consumption (across groups)?
+
+   **Answer:** Within one consumer group, each partition is assigned to
+   only one consumer, so the group splits the work (load balancing). A
+   different consumer group reading the same topic gets its own full copy
+   of every message, independent of the first group — that's how two
+   different services can both process every event.
+
 3. Why does the partition count set a hard limit on consumer parallelism
    within one consumer group?
+
+   **Answer:** A partition can only be actively read by one consumer per
+   group at a time — so with 4 partitions, adding a 5th consumer to that
+   group just leaves it idle. To increase parallelism you need more
+   partitions.
+
 4. How does Kafka's retention-based storage model differ fundamentally
    from a traditional message queue's delete-on-consume model?
+
+   **Answer:** A traditional queue deletes a message once consumed —
+   it's gone. Kafka keeps messages on disk for a configured retention
+   period (or forever) regardless of consumption, so multiple consumers
+   can read the same message independently, and you can replay history.
+
 5. How would you achieve ordering guarantees for a specific entity (e.g.
    one customer's events) while still parallelizing across entities?
+
+   **Answer:** Use the entity's ID (e.g. `customer_id`) as the partition
+   key — Kafka hashes it to always route that entity's messages to the
+   same partition, preserving order per-entity, while different entities
+   still spread across partitions for parallelism.
 
 ## Senior-level considerations
 
@@ -207,12 +238,20 @@ messaging system second; a traditional queue is built around
   decisions in a Kafka-based system — it determines both ordering
   guarantees and load distribution, and is expensive to change once a
   topic has significant data and downstream consumers depending on
-  current partitioning.
+  current partitioning. For example, keying by `customer_id` gives good
+  parallelism for many customers, but a single huge customer can still
+  create a "hot partition" that one consumer can't keep up with.
 - Kafka's replay capability enables architectural patterns like event
   sourcing and rebuilding derived read models from scratch — a
   significant advantage over traditional queues for systems that need to
   evolve their processing logic over time without losing historical data.
+  For example, fixing a bug in an analytics consumer can mean simply
+  resetting its consumer group offset to zero and reprocessing the whole
+  topic history.
 - Capacity planning for Kafka (partition count, retention period, broker
   count) needs to account for expected future consumer parallelism and
   data volume upfront, since some of these dimensions are difficult or
   operationally risky to change after a topic is in heavy production use.
+  For example, under-provisioning partitions early means a costly,
+  carefully-coordinated repartitioning project later, since increasing
+  partitions changes key-to-partition hashing for existing data.

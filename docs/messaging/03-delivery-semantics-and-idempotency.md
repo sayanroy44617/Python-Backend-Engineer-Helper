@@ -174,15 +174,49 @@ arbitrarily far apart.
 
 1. Why do most production systems choose at-least-once delivery with
    idempotent consumers over chasing true exactly-once semantics?
+
+   **Answer:** True end-to-end exactly-once across independent systems is
+   extremely hard/expensive to guarantee (network partitions, crashes
+   mid-processing). At-least-once (occasionally redeliver) combined with
+   an idempotent consumer (safe to process twice) gets the same practical
+   result — correct data — with far less complexity.
+
 2. Walk through why acking a message before vs. after processing changes
    the delivery guarantee from at-least-once to at-most-once.
+
+   **Answer:** Ack-before-processing: if the consumer crashes right after
+   acking but before finishing, the message is gone and never retried —
+   that's at-most-once (might lose it). Ack-after-processing: if it
+   crashes mid-processing, the message stays unacked and gets redelivered
+   — that's at-least-once (might duplicate, never lose).
+
 3. Give an example of an operation that's naturally idempotent and one
    that isn't, and explain how you'd make the non-idempotent one safe to
    retry.
+
+   **Answer:** `set_status("shipped")` is naturally idempotent — running
+   it twice leaves the same end state. `increment_balance(10)` isn't —
+   running it twice adds 20. Make it safe by checking a processed-message
+   ID first (dedupe table) before applying the increment, so a retry with
+   the same message ID is a no-op.
+
 4. What does Kafka's transactional API actually guarantee exactly-once
    for, and where does that guarantee stop applying?
+
+   **Answer:** It guarantees exactly-once for reading from one Kafka
+   topic, processing, and writing back to another Kafka topic — all
+   within Kafka's own transactional boundary. The moment your consumer
+   also writes to something outside Kafka (a database, an HTTP call),
+   that guarantee no longer covers that external side effect.
+
 5. Why might you use a time-bounded deduplication cache instead of an
    unbounded "processed IDs" table?
+
+   **Answer:** An unbounded table of every processed message ID grows
+   forever and gets expensive to check against. A time-bounded cache
+   (e.g. "seen in the last 24h") is enough in practice, because
+   redeliveries almost always happen soon after the original, not weeks
+   later.
 
 ## Senior-level considerations
 
@@ -190,12 +224,18 @@ arbitrarily far apart.
   choosing at-least-once with idempotent consumers is usually the
   pragmatic choice, but it requires *every* consumer along the pipeline
   to actually implement idempotency correctly, not just the first one.
+  For example, if consumer A dedupes correctly but forwards to consumer B
+  which doesn't, a duplicate can still slip through downstream.
 - "Exactly-once" is one of the most commonly misused terms in messaging
   system marketing — a senior engineer should be able to precisely state
   what guarantee a given configuration actually provides and where its
   boundary is (e.g. within-broker vs. end-to-end across external systems).
+  For example, "Kafka exactly-once" typically means Kafka-to-Kafka, not
+  "exactly-once all the way to a downstream Postgres write."
 - Idempotency-key storage and TTL design (how long to retain "already
   processed" records) is itself a trade-off between correctness
   confidence and storage/operational cost — driven by the real expected
   redelivery/retry window of the specific system, not a fixed rule of
-  thumb.
+  thumb. For example, a payment system might keep dedupe keys for 7 days
+  to cover even unusually delayed retries, while a metrics pipeline might
+  only need a 10-minute window.

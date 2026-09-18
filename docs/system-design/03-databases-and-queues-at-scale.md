@@ -170,28 +170,80 @@ before it was actually necessary.
 
 1. What problem do read replicas solve, and what problem do they *not*
    solve (i.e., what still requires sharding)?
+
+   **Answer:** Read replicas increase read capacity by offloading SELECT
+   traffic from the primary. They do not fix write bottlenecks, hot write
+   paths, or a dataset that no longer fits well on one primary, which is
+   where sharding may be needed.
+
 2. Why does horizontally scaling the application layer put pressure on
    the database's connection limit, and how is that typically mitigated?
+
+   **Answer:** More app instances usually means more total DB
+   connections, and databases hit connection limits long before they hit
+   raw CPU limits in many real systems. Teams usually mitigate this with
+   connection pooling, smaller pool sizes per instance, and tools like
+   PgBouncer.
+
+   ```python
+   engine = create_engine(
+       DB_URL,
+       pool_size=20,
+       max_overflow=10,
+   )
+   ```
+
 3. What are the trade-offs of sharding a database, beyond just "it's
    more complex"?
+
+   **Answer:** You trade one big database for many smaller ones, which
+   changes query patterns, operational tooling, and failure handling.
+   Cross-shard joins get harder, resharding is painful, and a bad shard
+   key can create hotspots that cancel out the expected scaling benefit.
+
 4. How does a message queue act as a scaling technique, not just a
    decoupling mechanism?
+
+   **Answer:** It absorbs spikes so producers do not force consumers to
+   process everything immediately in real time. That lets you scale
+   workers based on backlog depth and smooth out bursty traffic instead
+   of overprovisioning for every peak.
+
+   ```text
+   API -> enqueue job
+   workers x 5 -> drain backlog
+   queue depth up -> scale workers
+   ```
+
 5. In what order would you typically reach for caching, read replicas,
    queues, and sharding when scaling a system, and why?
+
+   **Answer:** Usually caching first, then read replicas for read-heavy
+   DB pressure, then queues where producer and consumer rates differ, and
+   sharding last because it is the hardest to undo. That order gives the
+   best cost-to-complexity trade-off for many backend systems.
 
 ## Senior-level considerations
 
 - Database scaling decisions (read replicas, sharding) are usually far
   more expensive to reverse than application-layer scaling decisions —
   a sharding scheme chosen too early, or with a poor shard key, can be
-  extremely costly to change once significant data has accumulated.
+  extremely costly to change once significant data has accumulated — for
+  example, sharding by region may look fine early on, then become a
+  major migration problem when one region grows 10x faster than the
+  others.
 - The "cache and replicate before you shard" ordering is a strong
   default, but not universal — a genuinely write-heavy, high-volume
   workload (e.g. high-frequency event ingestion) may need sharding (or a
   purpose-built store) from early on, and recognizing that pattern
-  correctly matters as much as the default ordering itself.
+  correctly matters as much as the default ordering itself — for
+  example, an analytics pipeline ingesting millions of events per minute
+  may need partitioned storage long before a normal CRUD product would.
 - Queues introduce eventual consistency and failure modes (message
   loss, duplicate processing, ordering) that a synchronous call doesn't
   have — introducing a queue is a real architectural trade-off, not a
   free decoupling win, and should be justified by the actual load-
-  smoothing or resilience benefit it provides.
+  smoothing or resilience benefit it provides — for example, an email
+  service can safely tolerate delayed retries, but an inventory-reserve
+  workflow may need much tighter correctness guarantees before going
+  async.

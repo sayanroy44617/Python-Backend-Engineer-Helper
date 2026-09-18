@@ -167,25 +167,62 @@ lifespan setup, but doesn't contain business or route logic itself.
 
 1. Why keep API routes, services, and repositories as separate layers
    instead of one flat file?
+
+   **Answer:** Because they change for different reasons: HTTP shape, business rules, and persistence are separate concerns. That separation keeps route handlers thin and lets you change storage or transport without rewriting everything.
 2. Why shouldn't a service layer raise `HTTPException` directly?
+
+   **Answer:** `HTTPException` is a web concern, and putting it in services hard-couples business logic to FastAPI. A service should raise a domain error like `UserAlreadyExistsError`, and the API layer should translate that into the right status code.
+
+   ```python
+   class UserAlreadyExistsError(Exception):
+       pass
+
+   def create_user(email_exists: bool) -> None:
+       if email_exists:
+           raise UserAlreadyExistsError()
+   ```
 3. How does this layering make unit testing business logic easier?
+
+   **Answer:** You can test the service with a fake repository directly, without HTTP requests, dependency injection, or a running app. That makes tests faster and much more targeted.
+
+   ```python
+   class FakeUserRepository:
+       def exists_by_email(self, email: str) -> bool:
+           return False
+   ```
 4. Why separate Pydantic schemas from ORM models instead of using one
    class for both?
+
+   **Answer:** API contracts and database shape drift for different reasons, so forcing them into one class creates unnecessary coupling. Separate models let you change a column, hide an internal field, or version the API without dragging the persistence layer along.
 5. How would you compose a chain of dependencies (`get_db` →
    `get_user_repository` → `get_user_service`) using FastAPI's DI system?
+
+   **Answer:** Build one dependency per layer and let each one depend on the next lower layer. That keeps construction centralized and makes the route depend only on the service it actually needs.
+
+   ```python
+   from fastapi import Depends
+
+   def get_user_service(repo: UserRepository = Depends(get_user_repository)) -> UserService:
+       return UserService(repo)
+   ```
 
 ## Senior-level considerations
 
 - Layering is a trade-off, not a universal rule — over-layering a small
   service adds indirection without benefit; the right amount of structure
   scales with team size and codebase complexity, and should be revisited
-  as the project grows rather than decided once and never questioned.
+  as the project grows rather than decided once and never questioned; for
+  example, a two-endpoint internal tool may not need repositories yet, while a
+  larger product API probably will.
 - Keeping business logic framework-agnostic (no FastAPI imports inside
   `services/`) is what allows reusing the same logic from a CLI, a
   background worker, or a different web framework entirely if needed — a
   common real-world scenario when a synchronous batch job needs to reuse
-  the same business rules as the API.
+  the same business rules as the API; for example, both a `/users` route and a
+  nightly CSV import job can call the same `UserService.create_user()`.
 - Domain-oriented package boundaries (grouping by bounded context rather
   than by technical layer alone) tend to age better in large codebases —
   this connects directly to the System Design section's discussion of
-  service boundaries, even within a single deployable application.
+  service boundaries, even within a single deployable application; for
+  example, `services/billing/` and `services/catalog/` usually scale better
+  than hundreds of unrelated files in one flat `services/` directory.

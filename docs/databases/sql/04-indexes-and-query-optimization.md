@@ -154,27 +154,66 @@ SELECT * FROM orders WHERE created_at >= '2024-01-01' AND created_at < '2024-01-
 
 1. How does an index change a `WHERE user_id = 42` query from O(n) to
    roughly O(log n)?
+
+   **Answer:** Without an index, the database scans every row (O(n)) to
+   check `user_id`. An index (typically a B-tree) is a sorted structure it
+   can binary-search, so it jumps straight to the matching rows in
+   roughly O(log n).
+
 2. What does `EXPLAIN ANALYZE` tell you that `EXPLAIN` alone doesn't?
+
+   **Answer:** `EXPLAIN` shows the planner's *estimated* plan and cost;
+   `EXPLAIN ANALYZE` actually runs the query and shows *real* timing and
+   row counts, so you can see where the estimate and reality diverge.
+
 3. Why does column order matter in a composite index?
+
+   **Answer:** A composite index on `(a, b)` is sorted by `a` first, then
+   `b` within each `a`. It can efficiently serve queries filtering on `a`
+   alone or `a` and `b`, but not on `b` alone — that would need a separate
+   index.
+
 4. Why doesn't PostgreSQL automatically index foreign key columns, and why
    does that matter in practice?
+
+   **Answer:** Postgres only auto-creates an index for primary keys/unique
+   constraints, not foreign keys — you have to add that index yourself.
+   Skipping it means every join or cascade delete on that foreign key
+   scans the whole child table.
+
 5. Why can't the N+1 query problem be solved by adding more indexes?
+
+   **Answer:** N+1 isn't a slow-query problem, it's a "too many round
+   trips" problem — even if every individual query is instant, doing 1000
+   of them sequentially adds up in network latency. The fix is batching
+   (a single `JOIN`/`WHERE id IN (...)` or eager loading), not indexing.
+
 6. What's the trade-off of adding an index — what does it cost, not just
    what does it save?
+
+   **Answer:** Every index speeds up reads on that column but slows down
+   every `INSERT`/`UPDATE`/`DELETE` (the index has to be maintained too),
+   and it takes extra disk space — so indexes should be added deliberately,
+   not "just in case."
 
 ## Senior-level considerations
 
 - Index strategy should be driven by actual production query patterns
   (from slow query logs / `pg_stat_statements`), not guesses — adding
   indexes reactively without evidence is a common source of both missed
-  opportunities and unnecessary write overhead.
+  opportunities and unnecessary write overhead. For example, indexing a
+  column that's filtered on in one rarely-run report but written to on
+  every request can slow down the hot write path for little benefit.
 - Query optimization work should start with `EXPLAIN ANALYZE` on the
   actual slow query, not assumptions — the planner's cost estimates and
   actual row counts (`rows=X` vs `rows=Y`) reveal whether statistics are
-  stale (`ANALYZE` the table) or the query itself needs restructuring.
+  stale (`ANALYZE` the table) or the query itself needs restructuring. For
+  example, a huge gap between estimated and actual rows often means the
+  table's statistics are stale and the planner is choosing a bad plan.
 - At scale, the biggest performance wins are usually architectural (fixing
   N+1 patterns, adding the right composite/partial indexes, denormalizing
   a hot read path) rather than micro-tuning individual queries — this
   mirrors the general profiling discipline in
   [Performance and Profiling](../../python/14-performance-and-profiling.md):
-  measure before optimizing.
+  measure before optimizing. For example, fixing one N+1 pattern in a
+  hot endpoint often beats a dozen small index tweaks combined.

@@ -154,19 +154,62 @@ need to describe "any object with this method" without forcing inheritance.
 
 1. What's the difference between inheritance and composition? Give a
    backend example.
+
+   **Answer:** Inheritance says one class is a specialized version of another; composition says one class uses another to get work done. In backend code, `RefundService` using a `PaymentGateway` dependency is usually composition, and it's easier to swap in tests.
+
+   ```python
+   class PaymentGateway:
+       def charge(self, amount: int) -> None:
+           print(amount)
+   ```
+
 2. Explain Python's MRO with a diamond inheritance example.
+
+   **Answer:** MRO is the order Python follows when resolving methods across parent classes. In a diamond shape, Python uses C3 linearization so each base appears once in a predictable order.
+
+   ```python
+   class A: ...
+   class B(A): ...
+   class C(A): ...
+   class D(B, C): ...
+
+   print(D.__mro__)
+   ```
+
 3. When would you choose an `ABC` over a `Protocol`, and vice versa?
-4. Why is "favor composition over inheritance" a common guideline?
+
+   **Answer:** Use an `ABC` when you want a real base class with shared logic and runtime enforcement. Use a `Protocol` when you only care about the method shape and don't want to force inheritance.
+
+ 4. Why is "favor composition over inheritance" a common guideline?
+
+   **Answer:** Because composition keeps dependencies explicit and swappable, while inheritance tends to couple behavior into a hierarchy that's harder to change later. It's usually the safer default in service code where requirements move a lot.
+
 5. What does `@abstractmethod` actually enforce, and when?
+
+   **Answer:** It prevents you from instantiating a class until all abstract methods are implemented. It does not validate business semantics; it only enforces that the required method names exist.
+
+   ```python
+   from abc import ABC, abstractmethod
+
+   class Base(ABC):
+       @abstractmethod
+       def run(self) -> None: ...
+   ```
 
 ## Senior-level considerations
 
 - Composition-based designs (dependency injection of collaborators) are
   what make services testable without heavy mocking frameworks — this is
-  the same principle behind FastAPI's `Depends()`.
+  the same principle behind FastAPI's `Depends()`; for example, injecting a
+  fake email sender into `UserService` is simpler than subclassing the whole
+  service for tests.
 - Overusing inheritance in domain models is a common source of rigid,
   hard-to-refactor codebases; many senior engineers default to composition
-  and reserve inheritance for genuinely stable, narrow hierarchies.
+  and reserve inheritance for genuinely stable, narrow hierarchies; for
+  example, `CsvReportExporter` and `PdfReportExporter` are often better as
+  separate strategies than siblings in a deep reporting tree.
 - `Protocol` + composition together enable structural typing without
   coupling your code to a specific class hierarchy — useful when writing
-  library code that must accept many caller-defined types.
+  library code that must accept many caller-defined types; for example, a
+  cache helper can accept any object exposing `get()` and `set()` methods,
+  not just one Redis wrapper class.

@@ -177,14 +177,44 @@ blanket consistency model everywhere.
 
 1. Why is "choose 2 of 3" in CAP theorem a slightly misleading
    simplification, and what's the more precise framing?
+
+   **Answer:** In a real distributed system, partition tolerance is not really optional because networks do fail. So the real question is usually: during a partition, do you reject some requests to stay consistent, or do you keep serving and accept stale data?
+
 2. Give an example of a real backend component that leans CP, and one
    that leans AP.
+
+   **Answer:** A PostgreSQL setup with synchronous replication leans CP because it may block or reject writes if replicas cannot confirm. A cache or CDN leans AP because it will usually keep serving slightly stale data instead of failing every read.
+
+   ```python
+   write_path = "primary + sync replica ack"   # CP-leaning
+   read_path = "serve cached response"         # AP-leaning
+   ```
+
 3. What's the difference between strong consistency and eventual
    consistency, and what does each cost?
+
+   **Answer:** Strong consistency means once a write succeeds, every later read sees it. Eventual consistency means replicas may be briefly behind, which improves availability and scale, but your app has to tolerate temporary stale reads.
+
 4. Why might different operations within the same system need different
    consistency guarantees?
+
+   **Answer:** Because the business risk is different per operation. Money movement or inventory reservation usually needs fresh, correct data right now, while feed counts or recommendations can often be slightly stale without hurting the user.
+
+   ```python
+   if operation in {"transfer_money", "reserve_stock"}:
+       require_strong_consistency = True
+   ```
+
 5. How does replication lag relate to the CAP theorem trade-off, even
    without an actual network partition occurring?
+
+   **Answer:** Replication lag is the everyday version of the same trade-off: you keep reads fast and available from replicas, but sometimes they are behind the primary. So even without a hard partition, you're still choosing some availability and scale over perfectly fresh reads.
+
+   ```sql
+   -- write goes to primary
+   UPDATE orders SET status = 'paid' WHERE id = 42;
+   -- immediate read from replica may still show 'pending'
+   ```
 
 ## Senior-level considerations
 
@@ -192,14 +222,20 @@ blanket consistency model everywhere.
   real distributed systems — most production systems mix consistency
   models across different data/operations rather than picking one
   extreme for everything, and recognizing where that mixing is
-  appropriate is a mark of mature system design.
+  appropriate is a mark of mature system design — for example, an
+  e-commerce system may require strong consistency for stock reservation
+  but allow eventual consistency for product view counters.
 - Choosing CP for an operation has a real, measurable availability
   cost (rejected requests during a partition) — this trade-off should be
   made deliberately and revisited as a system's actual failure patterns
   and business requirements become clearer, not decided once and
-  forgotten.
+  forgotten — for example, a payments team may accept temporary write
+  failures during a cross-zone network issue because double-charging is
+  worse than asking the user to retry.
 - Consistency requirements interact directly with user experience design
   — sometimes the right fix for an eventual-consistency staleness issue
   isn't a stronger consistency guarantee at the data layer, but a UI/UX
   choice that makes the staleness window a non-issue for the user (e.g.
-  optimistic UI updates).
+  optimistic UI updates) — for example, a social app can show a newly
+  created comment immediately in the author's session while background
+  replication catches up for everyone else.

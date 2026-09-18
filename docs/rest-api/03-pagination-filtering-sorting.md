@@ -153,24 +153,58 @@ existing clients, so this decision is easiest to make correctly up front.
 
 1. What's the difference between offset-based and cursor-based
    pagination? When would you choose one over the other?
+
+   **Answer:** Offset pagination says "skip N, take M" (`?offset=100&
+   limit=20`) — simple, but gets slow and inconsistent on large/changing
+   tables. Cursor pagination says "give me items after this specific
+   marker" (`?after=<last_id>&limit=20`) — stays fast and stable as data
+   grows or changes, so prefer it for large or frequently-written tables.
+
 2. Why can offset pagination return duplicate or skipped items under
    concurrent writes?
+
+   **Answer:** Offset is just "position N in the current result set." If
+   a row is inserted/deleted before that position while you're paging,
+   every row after it shifts, so page 2 can repeat or skip an item
+   compared to page 1.
+
 3. Why is wrapping list responses in an envelope (`{"items": [...],
    "total": ...}`) generally preferred over returning a bare array?
+
+   **Answer:** An envelope gives you room to add pagination metadata
+   (`total`, `next_cursor`) without changing the response's top-level
+   shape later — a bare array can only ever be a list, so adding metadata
+   is a breaking change.
+
 4. What database-level risk does unrestricted, arbitrary filtering expose?
+
+   **Answer:** Letting clients filter/sort on any column can force full
+   table scans on unindexed columns, or open a path to SQL injection if
+   filter values are concatenated into raw SQL instead of parameterized.
+
 5. How would you design a sort parameter that supports multiple sort keys
    and both directions?
+
+   **Answer:** Accept a comma-separated list with an optional `-` prefix
+   for descending, e.g. `?sort=-created_at,name`, and validate it against
+   an explicit allow-list of sortable columns.
 
 ## Senior-level considerations
 
 - Pagination strategy is a data-model decision, not just an API surface
   decision — cursor-based pagination usually requires a stable, indexed
   sort key (often the primary key or a composite key) chosen deliberately
-  at schema design time.
+  at schema design time. For example, cursoring on `created_at` alone
+  breaks if two rows share the same timestamp; pairing it with `id` as a
+  tiebreaker fixes that.
 - At scale, "total count" in an envelope can itself be an expensive query
   (`COUNT(*)` on a huge, filtered table) — some APIs deliberately omit or
-  approximate it rather than pay that cost on every paginated request.
+  approximate it rather than pay that cost on every paginated request. For
+  example, returning `has_more: bool` instead of an exact `total` avoids a
+  second expensive query on every page load.
 - Filtering/sorting/pagination conventions should be established once as
   an API-wide standard (shared utility/dependency, not per-endpoint
   reinvention) — inconsistency here is one of the most visible signs of an
-  API that grew without a coherent design review process.
+  API that grew without a coherent design review process. For example, a
+  shared FastAPI dependency like `PaginationParams` used across every
+  list endpoint keeps `limit`/`cursor` naming and defaults consistent.

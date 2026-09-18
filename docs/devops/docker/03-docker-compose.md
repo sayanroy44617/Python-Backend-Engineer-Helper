@@ -204,27 +204,73 @@ for depth).
 
 1. What problem does Docker Compose solve that plain `docker run`
    commands don't?
+
+   **Answer:** It lets you describe the whole app stack in one file so everyone starts the same services, networks, ports, and volumes with one command instead of remembering a long sequence of `docker run` flags.
+
+   ```bash
+   docker compose up -d
+   docker compose logs -f api
+   ```
+
 2. Why doesn't `depends_on` alone guarantee a dependency is ready to
    accept connections, and how would you fix that?
+
+   **Answer:** `depends_on` only means Docker starts the other container first; it does not mean Postgres or Redis inside that container is ready yet. Add a health check and make the app retry on startup so brief timing differences do not break the service.
+
+   ```yaml
+   depends_on:
+     db:
+       condition: service_healthy
+   ```
+
 3. How does Compose enable inter-service communication by hostname
    without manual network configuration?
+
+   **Answer:** Compose creates a shared network for the project and registers each service name in that network's DNS. That means `api` can call `db:5432` or `cache:6379` directly without you creating a bridge network by hand.
+
+   ```yaml
+   environment:
+     DATABASE_URL: postgresql://user:pass@db:5432/app
+   ```
+
 4. What's the practical difference between Docker Compose and
    Kubernetes, and when would you outgrow Compose?
+
+   **Answer:** Compose is great for one-machine workflows like local dev, smoke testing, or simple single-host deployments. You outgrow it when you need production orchestration features like self-healing, rolling deploys, service discovery across nodes, or autoscaling.
+
+   ```bash
+   docker compose up -d        # local stack
+   kubectl rollout restart deployment/api  # production orchestrator flow
+   ```
+
 5. How would you structure Compose configuration to support different
    settings for local development vs. CI?
+
+   **Answer:** Keep the base file close to the shared setup, then layer environment-specific overrides on top so local-only bind mounts or debug settings do not leak into CI. That keeps one mental model while still letting each environment add what it needs.
+
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.ci.yml up --build
+   ```
 
 ## Senior-level considerations
 
 - Compose is genuinely valuable as a local-development and CI tool, but
   recognizing exactly where its capabilities stop (no multi-host
   scheduling, no automatic failover, no rolling deployments) prevents
-  reaching for it inappropriately in a production context.
+  reaching for it inappropriately in a production context — for example,
+  using Compose for `api + db + redis` in CI is fine, but using it as
+  the failover story for a multi-node production platform is the wrong
+  tool.
 - Startup ordering and readiness (health checks, retry/backoff in
   application code) matter more than they first appear — a system that
   "usually works" locally because services happen to start in a
   convenient order can fail unpredictably once deployed to an environment
-  with different timing characteristics.
+  with different timing characteristics. For example, an API that boots
+  fine on a laptop might fail in CI if Postgres takes 8 seconds longer
+  to become ready and the app exits after one connection attempt.
 - Keeping local Compose configuration close to production configuration
   (same image, same environment variable names, same service topology
   where practical) reduces the classic "works in Compose, breaks in
-  production" class of surprises.
+  production" class of surprises — for example, using the same
+  `DATABASE_URL` shape locally and in production avoids code paths that
+  only exist in one environment.

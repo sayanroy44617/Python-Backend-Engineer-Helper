@@ -137,24 +137,68 @@ ensures they all succeed or all roll back together — covered in depth in
 
 1. What is the logical order of SQL clause evaluation, and why does it
    matter for what you can reference where?
+
+   **Answer:** Logically: `FROM` → `WHERE` → `GROUP BY` → `HAVING` →
+   `SELECT` → `ORDER BY`. That's why you can't reference a `SELECT`
+   column alias in `WHERE` (it doesn't exist yet at that stage) but you
+   can in `ORDER BY` (it runs after `SELECT`).
+
 2. Why should every `UPDATE`/`DELETE` statement include a `WHERE` clause
    (barring deliberate exceptions)?
+
+   **Answer:** Without `WHERE`, the statement applies to every row in the
+   table — a classic "forgot the WHERE" incident that wipes/overwrites an
+   entire table instead of one row.
+
+   ```sql
+   DELETE FROM orders WHERE id = 42;   -- one row
+   DELETE FROM orders;                  -- every row, silently
+   ```
+
 3. What does `RETURNING` do, and what problem does it solve?
+
+   **Answer:** `RETURNING` gives back the row(s) affected by an
+   `INSERT`/`UPDATE`/`DELETE` in the same round trip — so you don't need a
+   separate `SELECT` afterward just to get the generated `id` or updated
+   values.
+
+   ```sql
+   INSERT INTO users (name) VALUES ('ana') RETURNING id;
+   ```
+
 4. How does `INSERT ... ON CONFLICT DO UPDATE` avoid a race condition that
    a separate `SELECT`-then-`INSERT` wouldn't?
+
+   **Answer:** `SELECT` then `INSERT` has a gap where two concurrent
+   requests can both see "no row exists" and both try to insert, causing
+   a duplicate-key error. `ON CONFLICT` makes the check-and-write atomic
+   at the database level, so only one wins cleanly.
+
 5. Why does `WHERE column = NULL` never match any rows?
+
+   **Answer:** `NULL` means "unknown," and comparing anything to
+   "unknown" with `=` also yields unknown (not true), so no rows ever
+   match. You need `WHERE column IS NULL` instead.
 
 ## Senior-level considerations
 
 - Preferring atomic statements (`ON CONFLICT`, single `UPDATE ... WHERE`)
   over "check then act" application logic eliminates a whole class of
   race conditions under concurrent load — relevant to correctness at
-  scale, not just style.
+  scale, not just style. For example, two requests incrementing a
+  `stock_count` with `UPDATE products SET stock = stock - 1 WHERE id = ?`
+  is safe under concurrency; reading the value in Python then writing it
+  back is not.
 - Destructive statement safety (mandatory `WHERE`, dry-run via `SELECT`
   first, code review for raw SQL migrations) is often enforced via team
   process/tooling, not just individual discipline — worth establishing as
-  a convention on any team writing raw SQL or migrations.
+  a convention on any team writing raw SQL or migrations. For example,
+  requiring every migration PR to include the `SELECT` version of a
+  `DELETE`'s `WHERE` clause in the description, reviewed before merge.
 - Understanding exact `SELECT`/`UPDATE`/`DELETE` semantics is the
   foundation for reasoning correctly about what SQLAlchemy generates and
   executes underneath the ORM abstraction (see
-  [SQLAlchemy](../sqlalchemy/index.md)).
+  [SQLAlchemy](../sqlalchemy/index.md)). For example, knowing that
+  `session.query(User).filter(User.id == 1).delete()` compiles to a plain
+  `DELETE ... WHERE` (not per-row `__del__` calls) explains why bypassing
+  the ORM's in-memory objects also bypasses any Python-side cascade logic.

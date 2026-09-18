@@ -170,13 +170,42 @@ shared pool as needed.
 
 1. What does `with session.begin():` guarantee compared to manually
    calling `commit()`/`rollback()`?
+
+   **Answer:** It automatically commits on success or rolls back on any
+   exception, so you can't forget the rollback — manual
+   `commit()`/`rollback()` requires you to remember the `try`/`except` to
+   get the same guarantee.
+
 2. What is a savepoint (`begin_nested()`), and when would you use one?
+
+   **Answer:** A savepoint is a rollback point *inside* an outer
+   transaction — you can undo just the nested block without aborting
+   everything before it. Useful when one sub-step (e.g. an optional,
+   speculative insert) might fail but you still want to keep the rest of
+   the transaction.
+
 3. Why should the `Engine` (and its connection pool) be created once at
    application startup rather than per request?
+
+   **Answer:** The Engine owns the connection pool — creating a new one
+   per request means opening real DB connections per request instead of
+   reusing a pool, defeating the whole point of pooling.
+
 4. What's the relationship between a `Session` and a connection from the
    pool — when does a session actually borrow one?
+
+   **Answer:** A session doesn't hold a connection until it needs to run
+   SQL — it checks one out from the Engine's pool on first query/flush,
+   and returns it to the pool when the transaction ends (commit/rollback),
+   not when the session object itself is created.
+
 5. What happens if `pool_size` + `max_overflow` across all your
    application instances exceeds the database's `max_connections`?
+
+   **Answer:** Under enough concurrent load, the database rejects new
+   connections once it hits `max_connections`, causing failed requests —
+   pool settings on each instance need to be planned against the DB's
+   actual limit, not set in isolation per service.
 
 ## Senior-level considerations
 
@@ -185,12 +214,20 @@ shared pool as needed.
   limit), not a per-service tuning knob considered in isolation — this
   connects directly to
   [Locks, Deadlocks, and Connection Pooling](../postgresql/03-locks-deadlocks-and-connection-pooling.md).
+  For example, scaling a service from 5 to 20 replicas without revisiting
+  `pool_size` can quietly push total connections past the database's
+  limit.
 - Keeping the transactional scope of a session as narrow as possible (no
   slow I/O inside `session.begin():`) is both a performance and a
   correctness concern — it minimizes lock hold time and reduces the
-  chance of holding a connection open when the pool is under pressure.
+  chance of holding a connection open when the pool is under pressure. For
+  example, calling a slow third-party API inside an open transaction
+  holds row locks and a pool connection for as long as that API call
+  takes.
 - Understanding exactly when SQL is actually sent (flush) versus staged in
   memory is essential for reasoning about performance and correctness in
   code that batches many changes before a single commit — a common
   interview probe for real SQLAlchemy experience versus surface-level
-  familiarity.
+  familiarity. For example, querying mid-transaction for a row you just
+  added but haven't flushed can return stale results if autoflush is
+  disabled.

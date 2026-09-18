@@ -180,27 +180,80 @@ portable to another without adjustment.
 
 1. What's the relationship between the Ingress object and an Ingress
    controller — why doesn't Ingress work without one installed?
+
+   **Answer:** The Ingress object is only a routing definition stored in the
+   Kubernetes API. An Ingress controller is the component that watches that
+   definition and actually configures NGINX, Traefik, or a cloud load balancer
+   to enforce it.
+
 2. Why is Ingress (Layer 7) able to do host/path-based routing that a
    plain `LoadBalancer` Service (Layer 4) cannot?
+
+   **Answer:** Layer 7 routing understands HTTP details like the Host header and
+   URL path, so it can send `/users` and `/orders` to different backends. A
+   plain Layer 4 load balancer only forwards TCP/UDP traffic by IP and port,
+   without inspecting HTTP semantics.
+
+   ```yaml
+   - path: /users
+     backend:
+       service:
+         name: users-service
+   ```
+
 3. Where does TLS termination typically happen in a Kubernetes cluster,
    and what tool commonly automates certificate management there?
+
+   **Answer:** TLS usually terminates at the Ingress controller, which handles
+   HTTPS before forwarding traffic to internal Services. `cert-manager` is the
+   common tool used to request, renew, and rotate those certificates
+   automatically.
+
+   ```yaml
+   tls:
+     - hosts: [api.example.com]
+       secretName: api-tls-cert
+   ```
+
 4. Why might Ingress annotations written for one controller not work
    after switching to a different one?
+
+   **Answer:** Annotations are often controller-specific extensions, not part of
+   the core Kubernetes Ingress spec. So an NGINX annotation for rate limiting,
+   rewrites, or timeouts may simply be ignored by ALB or Traefik.
+
 5. When would you still use a `LoadBalancer` Service directly instead of
    routing through an Ingress?
+
+   **Answer:** You would still use it for non-HTTP traffic like raw TCP or UDP,
+   or for a very simple service that just needs direct external exposure. For
+   example, a public PostgreSQL proxy or game server would not fit the normal
+   HTTP-focused Ingress model.
+
+   ```yaml
+   kind: Service
+   spec:
+     type: LoadBalancer
+   ```
 
 ## Senior-level considerations
 
 - Choosing an Ingress controller is itself a real architectural decision
   — annotation support, performance characteristics, and cloud
   integration differ meaningfully between NGINX, Traefik, and
-  cloud-native controllers, and switching later has real migration cost.
+  cloud-native controllers, and switching later has real migration cost — for
+  example, an AWS team may pick ALB for native WAF integration, then later pay
+  a migration cost if they move to NGINX-specific annotations.
 - Centralizing TLS termination, rate limiting, and routing at the Ingress
   layer is both an operational simplification and a security control
   point — it's often where organization-wide policies (WAF rules, global
-  rate limits) are enforced consistently across many services.
+  rate limits) are enforced consistently across many services — for example,
+  a platform team can enforce a 10 MB request-body limit and shared bot
+  blocking rules once at the cluster edge instead of in every app.
 - Ingress is the typical seam where a cluster's internal service mesh (if
   any) meets the outside world — understanding this boundary clearly is
   important for reasoning about where security controls, observability,
   and traffic management responsibilities actually live in a given
-  architecture.
+  architecture — for example, public HTTPS may terminate at NGINX Ingress,
+  then traffic continues inside the cluster over Istio-managed mTLS between
+  services.

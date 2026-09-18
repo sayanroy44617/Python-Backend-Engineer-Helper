@@ -181,14 +181,32 @@ metrics alone once a request spans several services.
 
 1. What's the difference between a trace and a span, and how do child
    spans relate to their parent?
+
+   **Answer:** A trace is the full end-to-end story for one request, while a span is one timed step inside that story. Child spans represent work done inside a parent operation, so the trace shows both nesting and where the time actually went.
+
 2. How does trace context propagate across service boundaries, and what
    breaks if it doesn't?
+
+   **Answer:** The caller sends trace metadata, usually with the `traceparent` header, and the downstream service continues the same trace instead of starting a new one. If that header is missing, you get disconnected traces and lose the end-to-end view.
+
+   ```python
+   headers: dict[str, str] = {"traceparent": "00-abc-123-01"}
+   ```
+
 3. Why is sampling necessary in a high-traffic system, and what's a
    reasonable strategy beyond a flat percentage?
+
+   **Answer:** Full tracing gets expensive fast in busy systems because you're storing and exporting a lot of span data. A practical strategy is to sample a small baseline of normal traffic but keep all erroring or unusually slow requests.
+
 4. What can a trace tell you about a slow request that a log correlation
    ID alone cannot?
+
+   **Answer:** A correlation ID helps you collect the logs for one request, but you still have to infer timing and causality from scattered messages. A trace shows the call tree directly, so you can see that, for example, `payment-service` consumed 280ms of a 340ms request.
+
 5. Why does auto-instrumentation typically cover most of what's needed,
    with manual spans reserved for specific cases?
+
+   **Answer:** Most of the useful plumbing is already at framework boundaries like inbound requests, outbound HTTP calls, and database queries, so auto-instrumentation captures a lot with low effort. Manual spans are better for business steps you care about, like `price_quote` or `fraud_check`.
 
 ## Senior-level considerations
 
@@ -196,12 +214,18 @@ metrics alone once a request spans several services.
   backend) is most valuable exactly in the microservices/distributed
   architectures where it's also most complex to fully instrument
   correctly — planning for it as services are first split apart is far
-  easier than retrofitting it once dozens of services exist.
+  easier than retrofitting it once dozens of services exist; for
+  example, standardizing on one HTTP client middleware for trace
+  propagation is easy with 3 services and painful with 30.
 - The combination of correlated logs, metrics, and traces (often called
   "the three pillars of observability") is what makes root-causing a
   production incident in a distributed system tractable — investing in
   this correlation (shared trace/request IDs across all three) pays off
-  disproportionately during an actual incident.
+  disproportionately during an actual incident; for example, an alert on
+  checkout p99 can link to a trace, and that same trace ID can pull the
+  exact payment-service logs.
 - Sampling strategy is itself a design decision with trade-offs — biasing
   sampling toward errors and slow requests (rather than uniform random
-  sampling) maximizes diagnostic value per unit of tracing overhead/cost.
+  sampling) maximizes diagnostic value per unit of tracing overhead/cost;
+  for example, you might sample 1% of healthy requests but 100% of 5xx
+  responses and requests slower than 1 second.

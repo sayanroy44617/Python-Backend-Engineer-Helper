@@ -195,13 +195,42 @@ single giant `UPDATE` can lock a large table for an extended period (see
 
 1. Why does synchronous SQLAlchemy inside an `async def` FastAPI route
    defeat the purpose of using `async def` at all?
+
+   **Answer:** Sync SQLAlchemy calls block the single event-loop thread
+   while waiting on the database, so every other coroutine (other
+   requests) also has to wait — you've paid for `async def` syntax but
+   lost the concurrency benefit it's supposed to give you.
+
 2. What driver-level requirement does async SQLAlchemy have that sync
    SQLAlchemy doesn't?
+
+   **Answer:** It needs an async-capable DBAPI driver (e.g. `asyncpg` for
+   Postgres instead of `psycopg2`), because the driver itself has to
+   support non-blocking I/O for `await` to actually yield control.
+
 3. Why should you always eager-load relationships in async code rather
    than relying on lazy loading?
+
+   **Answer:** Lazy loading normally issues a fresh sync-style query the
+   moment you touch the attribute — that doesn't work safely in an async
+   context without extra plumbing, so you eager-load
+   (`selectinload`/`joinedload`) upfront in the original async query
+   instead.
+
 4. What does `alembic revision --autogenerate` actually do, and why does
    its output still need manual review?
+
+   **Answer:** It diffs your current models against what Alembic thinks
+   the DB schema looks like, and generates a migration script for the
+   difference. It can miss things (renames look like drop+add, some type
+   changes aren't detected) or capture unrelated diffs — you have to read
+   and fix the generated file before trusting it.
+
 5. Why does every migration need both `upgrade()` and `downgrade()`?
+
+   **Answer:** `upgrade()` applies the change; `downgrade()` is how you
+   safely revert it if the deploy needs to be rolled back — without it,
+   a bad migration can't be undone cleanly in production.
 
 ## Senior-level considerations
 
@@ -209,13 +238,20 @@ single giant `UPDATE` can lock a large table for an extended period (see
   same PR as the model change, applied consistently across environments)
   is what keeps schema evolution safe across a team — schema drift between
   what migrations say and what's actually in production is a common,
-  hard-to-debug source of incidents.
+  hard-to-debug source of incidents. For example, someone manually
+  running `ALTER TABLE` directly against production "just this once"
+  leaves the migration history lying about the real schema.
 - Large-scale data migrations against production tables are an
   operational concern as much as a code concern — batching, running
   during low-traffic windows, and monitoring lock/replication impact are
   standard practices for any migration touching a large, actively-used
-  table.
+  table. For example, adding a `NOT NULL` column with a default to a
+  100M-row table can lock it for a long rewrite unless done in batched
+  steps.
 - Choosing sync vs. async SQLAlchemy is a whole-application architectural
   decision (driver choice, session dependency wiring, relationship loading
   discipline) — mixing the two inconsistently across a codebase is a
-  common source of confusing, hard-to-diagnose bugs.
+  common source of confusing, hard-to-diagnose bugs. For example, one
+  route using `asyncpg`/`AsyncSession` and another accidentally importing
+  the sync `Session` against the same models creates two incompatible
+  session-management patterns in one app.

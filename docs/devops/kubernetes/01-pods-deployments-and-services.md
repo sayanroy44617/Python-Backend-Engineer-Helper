@@ -212,27 +212,82 @@ running unrelated services in separate Pods.
 
 1. Why does Kubernetes rarely have you create bare Pods directly in
    practice?
+
+   **Answer:** A bare Pod is just one running instance, with no controller
+   watching it. In real workloads you usually want a Deployment so failed Pods
+   get recreated automatically and updates can roll out safely.
+
+   ```yaml
+   spec:
+     replicas: 3
+   ```
+
 2. How does a rolling update keep a service available throughout a
    deployment, and what do `maxUnavailable`/`maxSurge` control?
+
+   **Answer:** Kubernetes replaces Pods gradually instead of taking every old
+   Pod down at once. `maxUnavailable` limits how many replicas can be missing
+   during the rollout, and `maxSurge` limits how many extra new Pods can be
+   created temporarily.
+
+   ```yaml
+   rollingUpdate:
+     maxUnavailable: 0
+     maxSurge: 1
+   ```
+
 3. How does a Service know which Pods to route traffic to, given that
    Pods are constantly being created and destroyed?
+
+   **Answer:** A Service does not track Pod names directly; it selects Pods by
+   label. As Pods come and go, Kubernetes keeps the Service's backend endpoint
+   list updated based on which current Pods match that selector.
+
+   ```yaml
+   selector:
+     app: api
+   ```
+
 4. What's the difference between `ClusterIP`, `NodePort`, and
    `LoadBalancer` Service types?
+
+   **Answer:** `ClusterIP` is for internal-only traffic inside the cluster.
+   `NodePort` opens a port on every node and is mostly used for simple setups,
+   while `LoadBalancer` asks the cloud provider for a real external load
+   balancer.
+
 5. When would a multi-container Pod (sidecar pattern) be appropriate, and
    when is it an anti-pattern?
+
+   **Answer:** It makes sense when the extra container is tightly tied to the
+   main app, like a log shipper or proxy that should start, stop, and move with
+   it. It becomes an anti-pattern when you put unrelated services together and
+   accidentally force them to share one lifecycle and scaling model.
+
+   ```yaml
+   containers:
+     - name: api
+     - name: log-shipper
+   ```
 
 ## Senior-level considerations
 
 - Label/selector design is a foundational Kubernetes skill — nearly every
   higher-level object (Services, NetworkPolicies, Deployments) relies on
   consistent, well-thought-out labeling; a haphazard labeling scheme
-  causes subtle, hard-to-debug misrouting.
+  causes subtle, hard-to-debug misrouting — for example, a Service meant for
+  `app=payments` accidentally selecting background worker Pods because both
+  teams reused vague labels like `app=backend`.
 - Rolling update configuration (`maxUnavailable`/`maxSurge`) combined with
   correct readiness probes is what actually achieves zero-downtime
   deployments — either piece alone is insufficient, and this combination
-  is a common gap in less mature Kubernetes setups.
+  is a common gap in less mature Kubernetes setups — for example, a FastAPI
+  service with a 20-second startup needs a readiness probe plus
+  `maxUnavailable: 0` so new Pods warm up before any old Pod is removed.
 - The Pod/Deployment/Service separation reflects a broader Kubernetes
   design principle: small, composable objects, each with one
   responsibility (identity/lifecycle vs. desired-state management vs.
   stable networking) — understanding this separation clarifies almost
-  every other Kubernetes object built on top of it.
+  every other Kubernetes object built on top of it — for example, an HPA can
+  scale a Deployment from 3 to 10 Pods without clients changing anything
+  because they still talk to the same Service DNS name.

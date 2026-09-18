@@ -168,24 +168,105 @@ returning a generic message externally.
 ## Interview questions
 
 1. What's the execution order of middleware around a request/response?
+
+   **Answer:** Middleware wraps the request like nested layers: inbound
+   code runs top-down before the handler, then outbound code runs in reverse
+   order after the handler returns. Think "stack in, stack out."
+
+   ```python
+   from fastapi import FastAPI, Request
+
+   app = FastAPI()
+
+   @app.middleware("http")
+   async def timing_middleware(request: Request, call_next):
+       return await call_next(request)
+   ```
+
 2. Why would you prefer a custom exception + handler over raising
    `HTTPException` directly from a route?
+
+   **Answer:** A custom exception keeps service and repository code free of
+   HTTP details. That's better when the same business error can come from
+   multiple places and still needs one consistent API response.
+
+   ```python
+   class UserNotFoundError(Exception):
+       pass
+   ```
+
 3. Why is a catch-all exception handler important in production, and what
    should (and shouldn't) it expose to the client?
+
+   **Answer:** It guarantees unexpected failures still return a controlled
+   response instead of a raw traceback. Clients should get a generic error
+   message; logs should keep the real exception details for operators.
+
+   ```python
+   from fastapi import FastAPI, Request
+   from fastapi.responses import JSONResponse
+
+   app = FastAPI()
+
+   @app.exception_handler(Exception)
+   async def handle_unexpected_error(request: Request, exc: Exception):
+       return JSONResponse(status_code=500, content={"detail": "internal server error"})
+   ```
+
 4. What happens if middleware code blocks the event loop?
+
+   **Answer:** You slow down every concurrent request sharing that worker,
+   not just the current one. In practice, one blocking call in middleware
+   can turn into broad latency spikes under load.
+
+   ```python
+   import time
+   from fastapi import FastAPI, Request
+
+   app = FastAPI()
+
+   @app.middleware("http")
+   async def bad_middleware(request: Request, call_next):
+       time.sleep(1)
+       return await call_next(request)
+   ```
+
 5. How would you standardize the JSON error response shape for both
    validation errors and domain errors?
+
+   **Answer:** Define exception handlers that all return the same response
+   structure, then register one for validation errors and others for domain
+   exceptions. That keeps clients from having to parse a different schema
+   for each failure type.
+
+   ```python
+   from fastapi import FastAPI, Request
+   from fastapi.exceptions import RequestValidationError
+   from fastapi.responses import JSONResponse
+
+   app = FastAPI()
+
+   @app.exception_handler(RequestValidationError)
+   async def handle_validation_error(request: Request, exc: RequestValidationError):
+       return JSONResponse(status_code=422, content={"detail": "invalid request", "errors": exc.errors()})
+   ```
 
 ## Senior-level considerations
 
 - A consistent error response contract (status code + stable JSON shape)
   across the whole API is part of your service's contract with consumers —
   changing it later is a breaking change, so design it deliberately early.
+  For example, if every error returns `{"detail": "...", "code": "..."}`,
+  don't later switch only some endpoints to `{"message": "..."}`.
 - Centralizing domain-to-HTTP error mapping in exception handlers (rather
   than scattering `HTTPException` calls) keeps the service/business logic
   layer free of HTTP concerns — important for keeping that logic reusable
-  outside the web layer (e.g. from a CLI or background worker).
+  outside the web layer (e.g. from a CLI or background worker). For
+  example, `raise UserNotFoundError(user_id)` works from FastAPI, a Celery
+  worker, or a CLI command, while `HTTPException` is web-specific.
 - Middleware ordering and cost matter at scale: expensive middleware (e.g.
   synchronous logging to an external system) on every request can become a
   measurable latency tax across the whole API — profile it like any other
   hot path (see [Performance and Profiling](../python/14-performance-and-profiling.md)).
+  For example, a blocking network call in request-logging middleware adds
+  that delay to every endpoint, including cheap health checks.

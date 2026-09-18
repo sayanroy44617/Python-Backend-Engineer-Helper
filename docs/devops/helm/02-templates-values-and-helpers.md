@@ -224,14 +224,57 @@ validating a chart before install.
 
 1. What's the difference between `.Values`, `.Release`, and `.Chart` in
    a Helm template?
+
+   **Answer:** `.Values` holds your configurable settings from `values.yaml`
+   (or `--set`), `.Release` holds info about this specific install/upgrade
+   (name, namespace, revision), and `.Chart` holds metadata about the chart
+   itself (name, version). They're just different built-in objects Helm
+   injects into every template.
+
+   ```yaml
+   name: {{ .Release.Name }}-{{ .Chart.Name }}
+   image: {{ .Values.image.repository }}
+   ```
+
 2. Why would you define a named template in `_helpers.tpl` instead of
    repeating the same logic in each manifest template?
+
+   **Answer:** It's the DRY principle applied to Helm — write the logic
+   (like a standard label block) once, then call it from every manifest with
+   `{{ include "mychart.labels" . }}`. If the convention changes, you edit it
+   in one place instead of every file.
+
 3. How do environment-specific values files (e.g. `values-prod.yaml`)
    interact with a chart's default `values.yaml`?
+
+   **Answer:** Helm merges them, with later files overriding earlier ones —
+   `values.yaml` provides the defaults and `values-prod.yaml` only needs to
+   override what's different for production.
+
+   ```bash
+   helm upgrade my-app ./chart -f values.yaml -f values-prod.yaml
+   ```
+
 4. What's `helm template` useful for, and when would you use it instead
    of `helm install --dry-run`?
+
+   **Answer:** `helm template` renders manifests fully offline with no
+   cluster connection at all, which makes it great for CI linting, diffing,
+   or just reading output quickly. `--dry-run` actually talks to the API
+   server (for validation/admission checks) so it's closer to a real install.
+
 5. How would you conditionally render an entire resource (like an
    Ingress) based on a value?
+
+   **Answer:** Wrap the whole resource in an `{{- if .Values.ingress.enabled
+   }}` / `{{- end }}` block so the file only produces output when the flag
+   is true.
+
+   ```yaml
+   {{- if .Values.ingress.enabled }}
+   kind: Ingress
+   {{- end }}
+   ```
 
 ## Senior-level considerations
 
@@ -239,12 +282,18 @@ validating a chart before install.
   configuration logically, providing sane defaults) matters as much as
   the templates themselves — a poorly structured values schema makes a
   chart hard to configure correctly even if the underlying templates are
-  fine.
+  fine. For example, flat unrelated keys like `dbHost`, `enableCache`,
+  `logLevel` at the top level are harder to reason about than nested
+  `database:`, `cache:`, `logging:` blocks.
 - Helm's Go templating has real limits (no first-class validation of
   `values.yaml` structure without an additional `values.schema.json`) —
   mature charts add a JSON Schema to catch invalid values overrides at
   install time rather than failing obscurely during template rendering.
+  For example, a typo'd `replicaCont: 3` would otherwise be silently
+  ignored instead of failing fast.
 - Overusing control flow (deeply nested `if`/`range`) inside templates
   trades initial flexibility for long-term maintainability — many teams
   prefer several simpler charts over one highly conditional
-  "one chart fits all environments" chart.
+  "one chart fits all environments" chart. For example, a chart with 5
+  nested `if`s to support dev/staging/prod/canary/DR becomes very hard
+  to debug when a rendering bug only shows up in one combination.

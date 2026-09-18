@@ -141,25 +141,66 @@ upgrading anything.
 
 1. What's the practical difference between a chart's `version` and
    `appVersion` fields?
+
+   **Answer:** `version` is the chart's own version (bump it whenever the
+   templates/values change), while `appVersion` just documents which version
+   of the actual application the chart currently deploys. Helm never uses
+   `appVersion` for upgrade/rollback logic — that's purely informational.
+
+   ```yaml
+   version: 1.4.0      # chart changed
+   appVersion: "2.3.1" # app image tag it deploys
+   ```
+
 2. Why would a team use an existing public chart as a subchart dependency
    rather than writing the manifests themselves?
+
+   **Answer:** Well-maintained public charts (Postgres, Redis, Bitnami, etc.)
+   already encode a lot of production hardening — probes, resource defaults,
+   security settings — that would take real effort to reproduce correctly.
+   Depending on them saves time and reduces the chance of missing something.
+
 3. How would you validate a chart's rendered output before actually
    installing it against a cluster?
+
+   **Answer:** Run `helm template` (or `helm install --dry-run`) to see the
+   exact YAML Helm would apply, and pipe it through `kubectl apply --dry-run`
+   or a linter to catch mistakes before touching the cluster.
+
+   ```bash
+   helm template my-app ./chart | kubectl apply --dry-run=client -f -
+   ```
+
 4. What problem does bundling multiple related Kubernetes manifests into
    one chart solve that managing them as separate files doesn't?
+
+   **Answer:** It gives you one versioned, installable/upgradable/rollback-able
+   unit instead of a pile of loose YAML files that have to be applied in the
+   right order by hand. Helm tracks the whole bundle as a single release.
+
 5. How are charts typically packaged and distributed across teams?
+
+   **Answer:** They're packaged into a `.tgz` archive with `helm package` and
+   pushed to a chart repository or an OCI registry, then pulled with `helm
+   repo add`/`helm pull` just like a package manager.
 
 ## Senior-level considerations
 
 - Chart versioning discipline (bumping `version` deliberately, keeping
   `appVersion` accurate) is what makes chart-based deployments reliably
   auditable and reversible — sloppy versioning erodes exactly the benefit
-  Helm is meant to provide.
+  Helm is meant to provide. For example, if `version` isn't bumped after a
+  values-schema change, `helm diff`/rollback tooling can't tell two
+  meaningfully different releases apart.
 - Deciding when to depend on a public subchart vs. writing manifests
   in-house is a real trade-off between maintenance burden and control —
   public charts (e.g. Bitnami's) sometimes lag behind upstream releases
-  or make configuration choices that don't fit a given deployment.
+  or make configuration choices that don't fit a given deployment. For
+  example, a team needing a very specific Postgres extension might find
+  the public chart doesn't expose the right hook and has to fork it.
 - Chart repository/registry choice (a static file server vs. an OCI
   registry) affects how charts integrate with existing artifact
   management and CI/CD tooling — increasingly, teams standardize on OCI
-  registries to unify container image and chart distribution.
+  registries to unify container image and chart distribution. For
+  example, storing charts in the same OCI registry (e.g. GHCR) as
+  container images lets one auth/scanning pipeline cover both.

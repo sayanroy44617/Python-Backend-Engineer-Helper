@@ -217,26 +217,78 @@ in
 
 1. Why is a Kubernetes Secret's base64 encoding not equivalent to
    encryption, and what additional layers actually protect it?
+
+   **Answer:** Base64 only changes representation; anyone who can read the
+   Secret can decode it immediately. Real protection comes from tight RBAC,
+   encryption at rest for etcd, and often storing the real source of truth in
+   an external secrets manager.
+
+   ```bash
+   echo "YXBwdXNlcg==" | base64 -d
+   ```
+
 2. What's the practical (not just naming) difference between a ConfigMap
    and a Secret?
+
+   **Answer:** Both are injected into Pods in similar ways, but a Secret tells
+   the platform and the team that the value is sensitive and should have
+   stricter handling. In practice that usually means tighter RBAC, auditing,
+   and different GitOps rules than a normal ConfigMap.
+
 3. How would you avoid committing real secret values to version control
    while still managing Kubernetes manifests via GitOps?
+
+   **Answer:** Commit encrypted secret manifests or commit only references to an
+   external secrets system, not raw values. A common setup is SOPS or Sealed
+   Secrets in Git, or an `ExternalSecret` that pulls the real value at deploy
+   time.
+
+   ```yaml
+   kind: ExternalSecret
+   spec:
+     target:
+       name: db-credentials
+   ```
+
 4. Why would a production cluster typically sync Secrets from an external
    secrets manager rather than storing the source of truth as native
    Kubernetes Secrets?
+
+   **Answer:** External managers usually give you better rotation, auditing,
+   access control, and reuse across multiple systems. That keeps Kubernetes as
+   a consumer of secrets instead of turning it into the main place where every
+   credential is manually managed.
+
 5. How does RBAC apply the principle of least privilege specifically to
    Secret access?
+
+   **Answer:** RBAC should let a workload read only the exact Secret names it
+   needs, not every Secret in the namespace. That way, if one service account
+   is overused or compromised, it cannot automatically read unrelated database
+   passwords or API keys.
+
+   ```yaml
+   resources: ["secrets"]
+   resourceNames: ["db-credentials"]
+   verbs: ["get"]
+   ```
 
 ## Senior-level considerations
 
 - Treating "it's a Kubernetes Secret" as sufficient protection is a
   common, dangerous misconception — real secret security in Kubernetes
   requires RBAC, etcd encryption at rest, and often an external secrets
-  manager working together, not the Secret object type alone.
+  manager working together, not the Secret object type alone — for example,
+  a developer with broad namespace read access could still decode a production
+  database password unless those extra controls are in place.
 - GitOps workflows (declarative manifests as the source of truth in Git)
   create a direct tension with secret management — solving this properly
   (Sealed Secrets, SOPS, or external-secrets syncing) is a common
-  real-world Kubernetes architecture decision, not an edge case.
+  real-world Kubernetes architecture decision, not an edge case — for example,
+  an Argo CD repo may store only SOPS-encrypted Secret files so auditors can
+  review config changes without exposing raw credentials.
 - Least-privilege RBAC scoping for Secrets specifically (not just broad
   namespace access) is one of the highest-value, most commonly
-  under-implemented security controls in real Kubernetes clusters.
+  under-implemented security controls in real Kubernetes clusters — for
+  example, the payments API service account should be able to read only
+  `payments-db-credentials`, not every team's webhook keys and admin tokens.

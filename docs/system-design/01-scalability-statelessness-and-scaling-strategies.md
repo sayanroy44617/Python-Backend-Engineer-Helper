@@ -174,24 +174,75 @@ partitions, harder debugging) before the load actually justifies it.
 
 1. Why does statelessness specifically enable horizontal scaling, and
    what breaks in a stateful service when you add a second instance?
+
+   **Answer:** If any instance can handle any request, you can safely add
+   more instances behind a load balancer. In a stateful service, the
+   second request may hit a different instance that does not have the
+   user's in-memory session, cart, or workflow state.
+
 2. What are the trade-offs between horizontal and vertical scaling?
+
+   **Answer:** Vertical scaling is simpler and faster at the start, but it
+   hits a hard machine limit and keeps you exposed to one-box failure.
+   Horizontal scaling gives better resilience and more headroom, but you
+   now need load balancing, shared state, and better operational
+   discipline.
+
 3. If an application is stateless, where does its state actually live?
+
+   **Answer:** The app process is stateless, but the system still stores
+   state in shared places like PostgreSQL, Redis, object storage, or in
+   a signed token on the client. The key idea is that every app instance
+   can read the same truth instead of depending on one process's memory.
+
+   ```python
+   @app.get("/users/{user_id}")
+   def get_user(user_id: int, session: Session) -> UserOut:
+       user = session.get(User, user_id)  # shared external state
+       return UserOut.model_validate(user)
+   ```
+
 4. When would sharding a database be necessary even if the application
    layer itself is already stateless and horizontally scaled?
+
+   **Answer:** You shard when the database itself becomes the bottleneck,
+   especially on writes, storage size, or hot tables that one machine
+   cannot handle well anymore. Stateless app servers remove compute
+   pressure, but they do not magically make one database scale forever.
+
 5. Why might a team choose vertical scaling over horizontal scaling, at
    least initially?
+
+   **Answer:** Because it is usually the fastest low-risk move when the
+   system is still small and the problem is just "we need more CPU/RAM
+   this week." It buys time without forcing a bigger redesign before the
+   team has evidence that distributed complexity is worth it.
+
+   ```yaml
+   resources:
+     requests: { cpu: "500m", memory: "512Mi" }
+     limits: { cpu: "2", memory: "2Gi" }
+   ```
 
 ## Senior-level considerations
 
 - Designing for statelessness from the start is far cheaper than
   retrofitting it onto a service already built around in-process state —
   this is one of the highest-leverage early architectural decisions in a
-  system's lifetime.
+  system's lifetime — for example, moving login sessions to Redis in
+  month one is much easier than untangling years of sticky-session
+  assumptions across multiple services.
 - Horizontal scaling shifts complexity from "can one machine handle
   this" to "can this distributed system remain correct and consistent" —
-  a trade worth making only once the load genuinely requires it.
+  a trade worth making only once the load genuinely requires it — for
+  example, a checkout API with 3x traffic growth may justify multiple
+  replicas and shared state, while an internal admin tool usually does
+  not.
 - Real systems scale different components independently and
   differently — a stateless API layer scales horizontally with ease,
   while its backing database may need sharding, read replicas, or
   vertical scaling depending on its specific bottleneck, discussed
-  further in [Databases and Queues at Scale](03-databases-and-queues-at-scale.md).
+  further in [Databases and Queues at Scale](03-databases-and-queues-at-scale.md)
+  — for example, a read-heavy catalog API may jump from 4 to 20 app
+  replicas while the database scales mainly through Redis plus read
+  replicas instead of sharding.

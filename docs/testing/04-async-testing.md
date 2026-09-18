@@ -175,27 +175,72 @@ dependency causes a `TypeError` when the code under test tries to
 
 1. Why does a plain `async def test_...` function silently "pass" without
    `@pytest.mark.asyncio` or `asyncio_mode = "auto"` configured?
+
+   **Answer:** Without pytest-asyncio driving it, pytest just calls the
+   `async def` function, gets back a coroutine object, and — since
+   nothing ever awaits it — the coroutine body never actually runs. The
+   test "passes" because no assertion inside it ever executed, not
+   because anything was verified.
+
 2. Why do you need `AsyncMock` instead of `Mock` for mocking an async
    dependency? What error do you get if you use the wrong one?
+
+   **Answer:** Calling a regular `Mock` returns a `Mock` object
+   immediately, which isn't awaitable — awaiting it raises `TypeError:
+   object Mock can't be used in 'await' expression`. `AsyncMock` returns
+   a coroutine when called, so `await` works correctly.
+
 3. How would you test that a piece of code times out correctly using
    `asyncio.timeout`?
+
+   **Answer:** Run the code against something that intentionally takes
+   longer than the timeout (e.g. `asyncio.sleep`) and assert that
+   `TimeoutError` is raised.
+
+   ```python
+   import asyncio
+   import pytest
+
+   async def test_times_out() -> None:
+       with pytest.raises(TimeoutError):
+           async with asyncio.timeout(0.01):
+               await asyncio.sleep(1)
+   ```
+
 4. What's a risk with asserting on wall-clock elapsed time to verify
    concurrent behavior in a test?
+
+   **Answer:** Wall-clock timing is sensitive to CI machine load/jitter —
+   a test asserting "this ran in under 100ms" can flake on a busy CI
+   runner even though the concurrency logic is correct.
+
 5. How does testing an async FastAPI endpoint differ from testing a
    synchronous one?
+
+   **Answer:** You typically use an async HTTP test client (e.g.
+   `httpx.AsyncClient`) and `await` its calls inside an `async def` test,
+   instead of a plain synchronous `TestClient` call — the test itself
+   needs to run inside the event loop pytest-asyncio manages.
 
 ## Senior-level considerations
 
 - Reliable async testing requires understanding the event loop lifecycle
   pytest-asyncio manages per test — debugging "hangs forever" or "works
   locally, flakes in CI" async test failures often comes back to event
-  loop or fixture scope misconfiguration.
+  loop or fixture scope misconfiguration. For example, mixing a
+  `session`-scoped async fixture with `function`-scoped event loops can
+  cause a "Future attached to a different loop" error.
 - Testing cancellation and timeout behavior correctly is disproportionately
   valuable in async codebases — these are exactly the code paths (cleanup
   in `finally` under cancellation, propagating timeouts through nested
   `await`s) that are easy to get subtly wrong and hard to catch via manual
-  testing.
+  testing. For example, a test that cancels a task mid-`await` and
+  asserts its `finally` block still closed a file/connection catches bugs
+  that would otherwise only show up as a leaked resource in production.
 - Async test suites can be slower to run than an equivalent sync suite if
   fixtures aren't scoped well (e.g. recreating an async engine per test
   instead of per session) — balancing isolation against the overhead of
   async resource setup is a real design decision in larger test suites.
+  For example, sharing one `session`-scoped async engine across a test
+  file (with per-test transaction rollback) avoids reconnecting to the DB
+  for every single test.

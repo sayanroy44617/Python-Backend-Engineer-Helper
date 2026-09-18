@@ -182,25 +182,56 @@ level.
 
 1. What do `__enter__`/`__exit__` need to return, and what does the return
    value of `__exit__` control?
+
+   **Answer:** `__enter__` usually returns the object you want bound after `as`, though it can return something else if that makes the API cleaner. `__exit__` controls whether exceptions are suppressed: truthy swallows the exception, falsy lets it bubble up.
 2. Show how `contextlib.contextmanager` maps `yield` to
    `__enter__`/`__exit__`.
+
+   **Answer:** Everything before `yield` is setup, and the yielded value is what `with ... as ...` receives. Everything after `yield`, usually in `finally`, is teardown and runs even if the block fails.
+
+   ```python
+   from contextlib import contextmanager
+
+   @contextmanager
+   def managed(name: str):
+       print(f"open {name}")
+       try:
+           yield name
+       finally:
+           print(f"close {name}")
+   ```
 3. When would you use `ExitStack`?
+
+   **Answer:** Use `ExitStack` when you need to manage a dynamic number of resources or the exact set isn't known until runtime. It's the clean way to say "open a bunch of things and make sure all successful opens get cleaned up."
 4. What's the difference between a data descriptor and a non-data
    descriptor? Why does it matter?
+
+   **Answer:** A data descriptor has `__set__` or `__delete__` in addition to `__get__`, so it wins over instance attributes during lookup. A non-data descriptor only defines `__get__`, so an instance attribute with the same name can override it.
 5. How is `@property` implemented in terms of descriptors?
+
+   **Answer:** `@property` creates a descriptor object whose `__get__`, `__set__`, and `__delete__` methods call your getter/setter/deleter functions. That's why property logic runs on attribute access without you calling a method directly.
 6. Why shouldn't `__exit__` suppress exceptions by default?
+
+   **Answer:** Because cleanup and error handling are different jobs, and swallowing unexpected exceptions makes production failures much harder to see and debug. You should only return `True` when suppressing a very specific, intentional error case.
 
 ## Senior-level considerations
 
 - Context managers are the standard way to guarantee DB transaction
   boundaries (commit/rollback) are correct even under exceptions — a
   common production bug is a transaction left open because cleanup wasn't
-  wrapped in `try/finally`.
+  wrapped in `try/finally`; for example, `with session.begin(): ...`
+  clearly scopes the transaction and avoids half-finished writes after an
+  exception.
 - Async context managers (`__aenter__`/`__aexit__`) are essential for
   correctly managing connection pools and sessions in async web services;
   misusing them (not awaiting `__aexit__`, or reusing a single-use context
-  manager) causes subtle connection leaks under load.
+  manager) causes subtle connection leaks under load; for example, keeping
+  `async with httpx.AsyncClient()` around each request is safe, while
+  forgetting the context can leave sockets open until the process is under
+  pressure.
 - Descriptors are a "framework-level" tool — understanding them helps when
   reading (or building) libraries with declarative class-level fields
   (ORMs, serialization libraries) rather than something typically written
-  in everyday application code.
+  in everyday application code; for example, `User.email = Column(String)`
+  in an ORM works because attribute access is intercepted by descriptor-like
+  machinery instead of behaving like a plain string field.

@@ -236,14 +236,33 @@ access and weaker access controls than the production database itself.
 1. Walk through exactly why string-concatenated SQL is exploitable and
    why a parameterized query fixes it at the driver level, not just by
    convention.
+
+   **Answer:** With string concatenation, attacker input becomes part of the SQL syntax, so quotes, operators, and comments can change the query's meaning. Parameterized queries fix this because the driver sends SQL structure separately from the value, so the database treats the input as data only.
+
 2. Does using an ORM automatically prevent SQL injection? Explain the
    caveat.
+
+   **Answer:** Not automatically. ORM query builders are usually safe by default, but the moment you drop to raw SQL and interpolate input yourself, you have the same injection risk as plain DB driver code.
+
 3. Why is deleting a committed secret in a later git commit insufficient
    remediation?
+
+   **Answer:** Because the secret still exists in git history, clones, CI logs, and anywhere else it was fetched or cached. The real fix is to rotate or revoke the secret, then clean up history if needed.
+
 4. What capabilities does a dedicated secrets manager provide over a
    plain environment variable or `.env` file?
+
+   **Answer:** A secrets manager gives you controlled access, audit logs, rotation workflows, and usually better integration with IAM. A `.env` file is just plaintext config on disk with none of that operational control.
+
 5. Why does rotating a signing key require a transition window accepting
    both the old and new key?
+
+   **Answer:** Because tokens signed before the rotation are still out in the wild and need to verify until they expire or are replaced. If you switch instantly to only the new key, you break every still-valid token at once.
+
+   ```python
+   def active_keys() -> list[str]:
+       return ["new-key", "old-key"]
+   ```
 
 ## Senior-level considerations
 
@@ -251,15 +270,20 @@ access and weaker access controls than the production database itself.
   or code review checklist item flagging any raw SQL string
   concatenation) rather than relying on every individual engineer
   remembering to parameterize — process, not just knowledge, prevents
-  this class of bug at scale.
+  this class of bug at scale; for example, a review rule like "any
+  `execute()` call with an f-string is a blocker" catches the bug before
+  it ships.
 - Secrets management maturity (dedicated secrets manager, automated
   rotation, least-privilege access to secrets themselves) is one of the
   clearest differentiators between an early-stage system and a
   production-hardened one — it's usually retrofitted under pressure after
   an incident rather than designed in from the start, which is itself a
-  lesson worth internalizing.
+  lesson worth internalizing; for example, a mature setup lets only the
+  API deployment read the prod database password and rotates it on a
+  schedule.
 - Defense in depth matters here too: parameterized queries plus input
   validation plus least-privilege database credentials (see
   [Authorization Models and Least Privilege](03-authorization-and-least-privilege.md))
   mean that even if one layer fails, the blast radius of an injection
-  attempt is still contained.
+  attempt is still contained; for example, even if a query bug slips
+  through, a read-only DB user can still prevent data deletion.

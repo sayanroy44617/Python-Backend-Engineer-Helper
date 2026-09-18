@@ -146,12 +146,41 @@ no matching wheel is available. Modern tooling produces both by default.
 ## Interview questions
 
 1. What problem does the `src` layout solve compared to a flat layout?
+
+   **Answer:** It stops your code from being accidentally importable just
+   because it happens to sit in the current working directory. With
+   `src/`, the package *must* be installed (even editable) before it can
+   be imported, which catches missing packaging config early instead of
+   in production.
+
 2. What does `pip install -e .` actually do differently from a normal
    install?
+
+   **Answer:** A normal install copies files into `site-packages`; an
+   editable install points Python at your working source tree instead, so
+   edits to the source take effect immediately without reinstalling.
+
 3. What's the difference between a wheel and an sdist?
+
+   **Answer:** A wheel (`.whl`) is a prebuilt binary distribution — fast
+   to install, no build step needed. An sdist (`.tar.gz`) is raw source
+   that gets built at install time if no matching wheel exists.
+
 4. Why might a project "work" locally with a flat layout but fail once
    actually packaged and installed elsewhere?
+
+   **Answer:** Locally, Python can import the package straight from the
+   current directory even without a real install, hiding a broken or
+   missing `[build-system]`/package-discovery config. Once installed
+   properly elsewhere (Docker image, another machine), that "free"
+   cwd-relative import disappears and the app fails to find the package.
+
 5. When would you *not* want an editable install (e.g. in CI/production)?
+
+   **Answer:** In CI/production you want to install a real, immutable
+   wheel/sdist (or lockfile-pinned build) so what's tested is exactly
+   what's deployed — an editable install ties the running code to a local
+   source tree that shouldn't exist in that environment.
 
 ## Senior-level considerations
 
@@ -159,12 +188,19 @@ no matching wheel is available. Modern tooling produces both by default.
   beyond a trivial script, precisely because it surfaces packaging
   mistakes early (in development) rather than late (in production) — a
   meaningful reliability win for teams shipping installable internal
-  packages.
+  packages. For example, a missing `__init__.py` or bad package-discovery
+  config throws an `ImportError` the moment you run `pytest` locally,
+  instead of only failing after a Docker image ships to production.
 - Editable installs and reproducible production installs are different
   concerns: use editable installs for local dev velocity, but production/
   CI images should install from a lockfile-pinned, non-editable build to
-  guarantee what's running matches what was tested.
+  guarantee what's running matches what was tested. For example, a
+  Dockerfile should run `uv sync --frozen --no-editable`, not `pip install
+  -e .`.
 - Understanding the wheel/sdist distinction matters when your organization
   publishes internal packages to a private package index — wheel-only
   publishing speeds up install times across many services/CI jobs
-  compared to sdist-only, which requires a build step per install.
+  compared to sdist-only, which requires a build step per install. For
+  example, publishing only an sdist for a package with a C extension
+  forces every consuming service to compile it on every CI run instead of
+  just downloading a prebuilt wheel.

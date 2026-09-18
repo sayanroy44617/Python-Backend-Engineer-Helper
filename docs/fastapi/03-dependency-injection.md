@@ -162,26 +162,116 @@ request (unless `use_cache=False` is passed to `Depends`).
 ## Interview questions
 
 1. How does FastAPI resolve a chain of nested dependencies?
+
+   **Answer:** It walks the dependency graph from the route signature,
+   resolves upstream dependencies first, then injects their results into the
+   downstream ones. FastAPI also caches each dependency result once per
+   request unless you turn that off.
+
+   ```python
+   from fastapi import Depends
+
+   def get_token() -> str:
+       return "token"
+
+   def get_current_user(token: str = Depends(get_token)) -> str:
+       return token
+   ```
+
 2. What does a `yield`-based dependency give you that a plain `return`-based
    one doesn't?
+
+   **Answer:** It gives you setup plus guaranteed teardown around the
+   request. That's what you want for things like DB sessions where cleanup
+   must happen even if the handler raises.
+
+   ```python
+   from collections.abc import Iterator
+
+   def get_db() -> Iterator[str]:
+       try:
+           yield "db-session"
+       finally:
+           print("closed")
+   ```
+
 3. How would you swap a real database dependency for a test database in
    your test suite?
+
+   **Answer:** Override the dependency through `app.dependency_overrides`
+   so the routes keep the same contract but receive test infrastructure.
+   That's cleaner than mocking route internals.
+
+   ```python
+   from fastapi import FastAPI
+
+   app = FastAPI()
+
+   def get_db() -> str:
+       return "prod"
+
+   def get_test_db() -> str:
+       return "test"
+
+   app.dependency_overrides[get_db] = get_test_db
+   ```
+
 4. Is a dependency's result shared across multiple parts of the same
    request that depend on it? Why does that matter?
+
+   **Answer:** Yes, by default FastAPI caches it once per request. That
+   matters because you usually want one shared DB session or one resolved
+   current user, not duplicate work and inconsistent state.
+
+   ```python
+   from fastapi import Depends, FastAPI
+
+   app = FastAPI()
+
+   def get_settings() -> dict[str, str]:
+       return {"env": "dev"}
+
+   @app.get("/config")
+   def show_config(
+       a: dict[str, str] = Depends(get_settings),
+       b: dict[str, str] = Depends(get_settings),
+   ) -> dict[str, bool]:
+       return {"same_object": a is b}
+   ```
+
 5. When would you attach a dependency at the router level instead of on
    each individual route?
+
+   **Answer:** Use router-level dependencies when the same check or setup
+   applies to every endpoint in that area. Good examples are auth, API key
+   checks, tenant resolution, or audit context.
+
+   ```python
+   from fastapi import APIRouter, Depends
+
+   def verify_api_key() -> None:
+       return None
+
+   router = APIRouter(dependencies=[Depends(verify_api_key)])
+   ```
 
 ## Senior-level considerations
 
 - `Depends()` is FastAPI's built-in inversion-of-control mechanism —
   understanding it deeply means you rarely need a separate DI framework;
   overreliance on ad hoc global state/singletons instead of dependency
-  injection makes an app much harder to test in isolation.
+  injection makes an app much harder to test in isolation. For example, a
+  route that calls a global `current_db_session` is harder to replace in
+  tests than a route that declares `db=Depends(get_db)`.
 - Dependency chains that mix request-scoped and application-scoped
   concerns (e.g. a dependency that opens a new DB engine per request
   instead of reusing a pooled engine) are a common source of connection
   pool exhaustion under load — the dependency should typically request a
   session from an already-initialized pool, not create the pool itself.
+  For example, initialize `engine = create_engine(...)` once at startup,
+  then yield `SessionLocal()` per request.
 - Structuring dependencies as small, composable, single-purpose functions
   (rather than a few large ones) makes them easier to override
-  individually in tests and easier to reason about in code review.
+  individually in tests and easier to reason about in code review. For
+  example, keep `get_current_user`, `require_admin`, and `get_db` separate
+  instead of hiding all three behaviors inside one large dependency.

@@ -160,23 +160,67 @@ added back explicitly).
 
 1. How does CPython decide when to free an object with plain reference
    counting? What does that guarantee, and what does it not handle?
+
+   **Answer:** CPython frees an object as soon as its reference count
+   drops to zero, so non-cyclic objects usually die immediately and
+   predictably. It does not handle cycles, because objects in a cycle can
+   keep each other's counts above zero even when nothing else can reach
+   them.
 2. Why does a parent/child object graph with back-references need the
    cyclic garbage collector?
+
+   **Answer:** A back-reference creates a cycle, so plain refcounting
+   never sees either object hit zero on its own. The cyclic GC does an
+   extra reachability pass to find "still referencing each other, but
+   unreachable from the app" objects and reclaim them.
+
+   ```python
+   class Node:
+       def __init__(self) -> None:
+           self.other: "Node | None" = None
+   ```
 3. What's the purpose of `weakref`, and when would you use it?
+
+   **Answer:** `weakref` lets you point at an object without keeping it
+   alive, which is useful for caches, observer lists, and parent
+   back-references. Use it when you need a relationship but do not want
+   that relationship to control lifetime.
+
+   ```python
+   import weakref
+
+   class User:
+       pass
+
+   cache: weakref.WeakValueDictionary[str, User] = weakref.WeakValueDictionary()
+   ```
 4. What memory trade-off does `__slots__` make, and when is it worth it?
+
+   **Answer:** `__slots__` saves memory by removing the per-instance
+   `__dict__`, but you give up dynamic attributes unless you add them back
+   explicitly. It's worth it when you have a lot of small, fixed-shape
+   objects and profiling shows instance overhead matters.
 5. Why shouldn't you routinely call `gc.collect()` in application code?
+
+   **Answer:** Forcing collection on the hot path adds scanning work and
+   can make latency worse without fixing the real leak. It's mainly a
+   debugging or measurement tool, not normal business logic.
 
 ## Senior-level considerations
 
 - In long-running services (workers, API servers), gradual memory growth
   is often caused by application-level caches, not GC bugs — profile with
   `tracemalloc` or `objgraph` before assuming it's a garbage collector
-  issue.
+  issue; for example, a module-level `dict` keyed by request ID will keep
+  growing forever unless you evict entries.
 - Memory management interacts with the GIL (see
   [GIL and CPython](12-gil-and-cpython.md)): reference count updates
   themselves need to be thread-safe, which is one of the historical
-  reasons CPython's GIL exists.
+  reasons CPython's GIL exists; for example, two threads appending and
+  dropping references to the same list still need safe refcount updates.
 - For memory-sensitive, high-throughput services, `__slots__` and careful
   object lifetime management (avoiding accidental cycles/leaks) can
   meaningfully reduce container memory footprint and GC pause frequency —
-  relevant when tuning Kubernetes memory limits/requests.
+  relevant when tuning Kubernetes memory limits/requests; for example,
+  millions of short-lived parsed row objects are a much better fit for
+  slotted classes than regular instance dictionaries.

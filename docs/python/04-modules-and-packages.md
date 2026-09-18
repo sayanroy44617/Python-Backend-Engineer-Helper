@@ -164,27 +164,82 @@ runnable script/CLI entry point without side effects firing on import.
 ## Interview questions
 
 1. What's the difference between a module and a package?
+
+   **Answer:** A module is one `.py` file; a package is a directory that groups
+   related modules. In real services, `users.py` is a module and `app/services/`
+   is a package.
 2. What causes a circular import, and how do you resolve one?
+
+   **Answer:** A circular import happens when two modules need each other at
+   import time before either has finished loading. The real fix is usually to
+   move shared logic to a third module or untangle the dependency direction.
 3. What's the purpose of `__init__.py`? What changed with namespace
    packages?
+
+   **Answer:** `__init__.py` marks a regular package and can expose a clean
+   public API or lightweight package setup. Namespace packages made
+   `__init__.py` optional when one logical package is split across locations.
 4. Why would you prefer absolute imports over relative imports in
    application code?
+
+   **Answer:** Absolute imports are easier to read and keep working when files
+   move around inside the package tree. They also make architectural boundaries
+   more obvious in larger codebases.
+
+   ```python
+   from app.services.user_service import get_user
+   ```
 5. What is `sys.modules`, and why does re-importing a module not re-run its
    top-level code?
+
+   **Answer:** `sys.modules` is Python's module cache keyed by module name.
+   Once a module is imported, later imports reuse that same module object
+   instead of executing the file again.
+
+   ```python
+   import sys
+   import json
+   print("json" in sys.modules)  # True
+   ```
 6. What does `__all__` control, and when does it matter (`from module
    import *`)?
+
+   **Answer:** `__all__` defines which names are exported by `from module import *`.
+   It mostly matters for package surfaces and re-export convenience; explicit
+   imports are usually clearer in application code.
+
+   ```python
+   __all__: list[str] = ["get_user", "create_user"]
+   ```
 7. What does `if __name__ == "__main__":` guard against, and why does it
    matter for a file that's both imported and run directly?
+
+   **Answer:** It prevents script-only code from running when the file is
+   imported as a module. That matters because imports should be cheap and free
+   of surprise side effects like starting jobs or printing output.
+
+   ```python
+   def main() -> None:
+       print("run once")
+
+   if __name__ == "__main__":
+       main()
+   ```
 
 ## Senior-level considerations
 
 - Package structure encodes architectural boundaries: a `services/` package
   that imports from `api/` (instead of the reverse) is usually a sign of an
-  inverted dependency and a maintainability smell.
+  inverted dependency and a maintainability smell. Example: `api/users.py`
+  depending on `services/user_service.py` is normal; `services/user_service.py`
+  depending on `api/users.py` usually means HTTP concerns leaked downward.
 - Lazy/deferred imports (importing inside a function) can hide circular
   dependency problems rather than fix the underlying design issue — use
-  sparingly and prefer restructuring.
+  sparingly and prefer restructuring. Example: moving a shared DTO into
+  `app/common/types.py` is usually better than scattering `from ... import ...`
+  inside function bodies just to dodge import errors.
 - Import time matters for cold-start latency in serverless/containerized
   deployments — avoid heavy work (DB connections, large data loads) at
   module import time; defer to explicit startup hooks (e.g. FastAPI
-  `lifespan`).
+  `lifespan`). Example: don't create a database engine by opening a connection
+  at import time in `settings.py`; initialize it during app startup instead.

@@ -171,26 +171,66 @@ performance — a deliberate choice for specific hot paths (e.g. avoiding a
 
 1. Why are database-level constraints important even if the application
    already validates the same rules?
+
+   **Answer:** Application validation can be bypassed — a bug, a script
+   run directly against the DB, another service writing to the same
+   table. A `NOT NULL`/`CHECK`/foreign key constraint is the last line of
+   defense that no code path can accidentally skip.
+
 2. What's the difference between `ON DELETE CASCADE`, `RESTRICT`, and `SET
    NULL`? When would you choose each?
+
+   **Answer:** `CASCADE` deletes dependent rows automatically (e.g.
+   deleting a user deletes their orders) — use when the child truly can't
+   exist without the parent. `RESTRICT` blocks the delete if dependents
+   exist — use when accidental data loss is dangerous. `SET NULL` clears
+   the foreign key instead of deleting — use when the child should
+   survive as an "orphaned" record.
+
 3. What update anomaly does normalization prevent? Give a concrete
    example.
+
+   **Answer:** Storing the same fact in multiple rows means updating it
+   in one place but not another leaves inconsistent data. E.g. storing a
+   customer's address on every order row means changing their address
+   requires updating every order — normalize it into a `customers` table
+   referenced by `customer_id` instead.
+
 4. What are the trade-offs between an auto-increment integer primary key
    and a UUID primary key?
+
+   **Answer:** Integers are smaller, faster to index, and sort
+   insertion-order naturally, but they're guessable/sequential (leaks
+   volume, easy to enumerate) and awkward to generate client-side before
+   insert. UUIDs are unguessable and can be generated before hitting the
+   DB (useful for distributed systems), but they're larger and can
+   fragment index locality.
+
 5. When would deliberate denormalization be the right call, despite
    normalization's benefits?
+
+   **Answer:** When read performance on a hot path matters more than
+   write-time consistency risk — e.g. storing a `total_price` on an order
+   instead of recomputing it from line items on every read, accepting the
+   small risk of it drifting out of sync in exchange for speed.
 
 ## Senior-level considerations
 
 - Schema design decisions (key types, normalization level, cascade
   behavior) are expensive to change once a table has real production
   data and many dependent services — invest more design time upfront than
-  feels necessary for a "simple" table.
+  feels necessary for a "simple" table. For example, switching a
+  primary key from `int` to `UUID` after launch means migrating every
+  foreign key reference across every dependent table and service.
 - Constraints double as documentation: a `NOT NULL`/`CHECK`/foreign key
   makes an invariant explicit and enforced, rather than relying on
-  scattered application code and tribal knowledge to maintain it.
+  scattered application code and tribal knowledge to maintain it. For
+  example, `CHECK (price >= 0)` guarantees no negative price can ever
+  land in the table, regardless of which service or script writes to it.
 - Denormalization decisions should be traceable to a specific, measured
   performance need (see
   [Indexes and Query Optimization](../sql/04-indexes-and-query-optimization.md))
   — treat it as a targeted trade-off with a maintenance cost, not a
-  default schema style.
+  default schema style. For example, denormalizing `order.total_price`
+  should come with a documented reason (e.g. avoiding an expensive
+  aggregation join on every list page) and a plan for keeping it in sync.

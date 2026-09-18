@@ -190,28 +190,52 @@ incident response.
 
 1. What's the difference between a liveness check and a readiness check,
    and why does conflating them cause unnecessary restarts?
+
+   **Answer:** Liveness asks whether the process should be restarted, while readiness asks whether the instance should receive traffic right now. If you mix them, a temporary database outage can restart healthy app processes even though the real fix is just to stop sending them traffic for a while.
+
 2. What should — and shouldn't — a readiness check verify? Why is
    checking every downstream dependency a mistake?
+
+   **Answer:** A readiness check should cover hard dependencies the service cannot serve without, like its primary database. It should usually skip optional dependencies, because otherwise an outage in something non-critical like recommendations can make your whole API look unavailable.
+
 3. Why is symptom-based alerting (error rate, latency) generally
    preferred over cause-based alerting (CPU, memory) as the primary
    paging mechanism?
+
+   **Answer:** Symptom-based alerts tell you users are actually feeling pain, which is what pages should optimize for. High CPU is useful context, but it is often just noise unless it is also causing higher errors or latency.
+
 4. What is alert fatigue, and what design practices help prevent it?
+
+   **Answer:** Alert fatigue is what happens when people get paged so often for low-value signals that they start ignoring alerts. You prevent it by paging only on actionable, user-impacting conditions and routing lower-signal issues to dashboards or business-hours notifications.
+
 5. Why does attaching a runbook to an alert matter operationally, beyond
    just having the alert fire correctly?
+
+   **Answer:** A runbook cuts the time between "we got paged" and "we're actually investigating the right thing." It gives the responder a known starting path instead of forcing them to improvise under pressure.
+
+   ```python
+   runbook_url: str = "https://internal.example/runbooks/checkout-errors"
+   alert_name: str = "checkout error rate > 5%"
+   ```
 
 ## Senior-level considerations
 
 - Health check design directly affects system resilience during partial
   outages — a well-designed readiness check lets an orchestrator route
   around a genuinely degraded instance without unnecessarily restarting
-  healthy ones, minimizing blast radius.
+  healthy ones, minimizing blast radius; for example, one pod with a bad
+  DB connection pool can be marked unready while the rest keep serving.
 - Alerting philosophy (symptom-based, actionable, appropriately routed) is
   a deliberate design discipline that directly affects on-call
   sustainability — poorly designed alerting is a common, underestimated
   cause of team burnout and, ironically, worse incident response over
-  time as real alerts get lost in noise.
+  time as real alerts get lost in noise; for example, "CPU > 85%" might
+  be a Slack notification, while "checkout 5xx > 5% for 5 minutes" is a
+  page.
 - Observability (logging, metrics, tracing, health checks, alerting) works
   best as one integrated system rather than five separate tools — a
   senior engineer designs these together so an alert can lead directly to
   the relevant dashboard, trace, and logs for the affected request,
-  rather than requiring manual correlation during an incident.
+  rather than requiring manual correlation during an incident; for
+  example, a pager alert can link straight to the checkout dashboard with
+  trace and log filters pre-populated for the failing service.

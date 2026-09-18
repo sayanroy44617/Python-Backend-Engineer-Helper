@@ -107,12 +107,16 @@ for anything involving a third-party client or browser-based app.
 ### Authorization Code flow (simplified)
 
 ```
+
 1. App redirects user to the authorization server's /authorize endpoint.
+
 2. User logs in and approves access; server redirects back with a code.
+
 3. App's backend exchanges the code (+ client secret) for an access token
    at the /token endpoint -- this step happens server-to-server, so the
    code alone (briefly visible in a browser redirect) isn't enough to get
    a token without the client secret.
+
 4. App uses the access token to call the API.
 ```
 
@@ -196,25 +200,60 @@ for your service.
 
 1. What does a JWT's signature actually protect against, and what does it
    *not* protect against?
+
+   **Answer:** The signature proves the token was issued by someone holding the signing key and that the payload was not changed afterward. It does not hide the payload, so anyone holding the token can still read its claims.
+
 2. Explain the JWT algorithm confusion vulnerability and how to prevent
    it.
+
+   **Answer:** The bug happens when the server trusts the token header to tell it how to verify the token, which lets an attacker switch algorithms and trick validation. The fix is simple: hard-code the allowed algorithms and key type on the server side.
+
+   ```python
+   import jwt
+   
+   payload: dict[str, str] = jwt.decode(token, public_key, algorithms=["RS256"])
+   ```
+
 3. What's the difference between an access token and a refresh token, and
    why are they typically stored/transported differently?
+
+   **Answer:** An access token is short-lived and sent on API calls; a refresh token is longer-lived and only used to get a new access token. Because a refresh token is effectively a session-renewal credential, teams usually keep it in a more protected place like an httpOnly secure cookie.
+
 4. What problem does OIDC solve that plain OAuth2 doesn't?
+
+   **Answer:** OAuth2 tells you a client got delegated access; it does not standardize user identity. OIDC adds identity claims and standard endpoints so you can answer "who signed in?" instead of only "what can this token access?"
+
+   ```python
+   id_token_claims: dict[str, str | bool] = {
+       "sub": "123", "email": "dev@example.com", "email_verified": True
+   }
+   ```
+
 5. Why is the Authorization Code flow (with PKCE) preferred over the
    Password grant for third-party/browser-based clients?
+
+   **Answer:** It keeps the user's password with the identity provider instead of handing it to the client app, which is the big security win. PKCE also protects public clients like SPAs and mobile apps that cannot safely hold a client secret.
+
+   Flow in plain English: browser goes to the identity provider, user logs in there, the app gets a short-lived code, then swaps that code for tokens.
 
 ## Senior-level considerations
 
 - Choosing symmetric vs asymmetric JWT signing is an architectural
   decision tied to trust boundaries — asymmetric signing is the right
   default the moment more than one service needs to verify tokens it
-  didn't issue.
+  didn't issue. For example, an auth service signs with a private key,
+  while the API gateway and three backend services verify with the public
+  key only.
 - Token revocation strategy (short-lived access tokens, a refresh-token
   blocklist, or a short-TTL token cache check) needs to be decided
   explicitly, since JWTs are not inherently revocable before expiry the
-  way a server-side session is.
+  way a server-side session is. For example, a 10-minute access token +
+  refresh-token rotation gives you a bounded compromise window without
+  forcing a DB lookup on every request.
 - Real-world JWT vulnerabilities (algorithm confusion, missing audience
   validation, weak/shared secrets) come from implementation details, not
   the JWT concept itself — understanding these specific pitfalls is a
   strong signal of practical, not just theoretical, security knowledge.
+  For example, accepting a valid Google-issued token without checking
+  `aud == "your-api-client-id"` can let your API trust a token meant for
+  some other app.

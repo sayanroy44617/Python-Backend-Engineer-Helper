@@ -157,26 +157,66 @@ enforcement, the guarantee a pipeline's later stages depend on (that
 
 1. What's the practical trade-off between trunk-based development and
    GitFlow?
+
+   **Answer:** Trunk-based dev keeps everyone merging small changes into
+   `main` frequently, which gives fast feedback but requires strong test/CI
+   discipline. GitFlow uses long-lived branches (`develop`, release
+   branches) that give more structure for scheduled releases, at the cost of
+   slower merges and more complex conflict resolution.
+
 2. Why should CI run on pull requests rather than only after merging to
    `main`?
+
+   **Answer:** Catching a broken test on a PR is cheap — you fix it before
+   it ever touches `main`. Catching it after merge means `main` is broken
+   for everyone until someone reverts or fixes it, which blocks other
+   people's work.
+
 3. Why use Git tags (rather than arbitrary commits) as the trigger for a
    production deployment?
+
+   **Answer:** A tag is an explicit, immutable, human-chosen "this is release
+   1.4.0" marker, whereas any commit on `main` could be deployed accidentally
+   by an automated trigger. Tags make "what's in production" traceable and
+   intentional.
+
+   ```bash
+   git tag v1.4.0 && git push origin v1.4.0
+   ```
+
 4. What do branch protection rules actually guarantee, and why does the
    rest of a CI/CD pipeline depend on that guarantee holding?
+
+   **Answer:** They guarantee that code can't reach `main` (or get deployed)
+   without passing required checks and reviews — no direct pushes, no merging
+   with a red CI run. The whole "main is always deployable" assumption that
+   later pipeline stages rely on falls apart if this isn't actually enforced.
+
 5. How can commit message conventions feed into automated versioning or
    changelog generation?
+
+   **Answer:** Conventions like Conventional Commits (`feat:`, `fix:`,
+   `BREAKING CHANGE:`) let tooling automatically decide the next semantic
+   version and generate a changelog, instead of a human manually figuring out
+   if a release is a major/minor/patch bump.
 
 ## Senior-level considerations
 
 - Branching strategy is a team-process decision with real engineering
   consequences — the wrong choice for a team's actual release cadence
   and size creates friction (either too much process overhead or too
-  little safety) that compounds over time.
+  little safety) that compounds over time. For example, a 3-person
+  startup adopting full GitFlow with release branches often just adds
+  merge overhead with no matching benefit.
 - The reliability of "main is always deployable" is only as strong as
   the branch protection and CI enforcement behind it — treating it as a
   cultural norm alone, without enforcement, tends to erode under
-  deadline pressure.
+  deadline pressure. For example, allowing admin override on required
+  checks "just this once" during an incident often becomes a recurring
+  habit.
 - Tag-based, immutable release references are foundational to reliable
   rollback and auditing — without them, incident response has to first
   reconstruct what was actually deployed before it can even begin fixing
-  it.
+  it. For example, if deployments reference a moving branch instead of a
+  tag, redeploying "the same version" during an incident might silently
+  pick up new, untested commits.

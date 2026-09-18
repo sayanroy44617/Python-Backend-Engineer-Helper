@@ -184,24 +184,66 @@ iteration, running them only in CI).
 
 1. What's the practical difference between pytest's fixtures and
    `unittest`'s `setUp`/`tearDown`?
+
+   **Answer:** `setUp`/`tearDown` run for every test in a class,
+   unconditionally. Fixtures are opt-in per test (only tests that request
+   them get them), composable (a fixture can depend on other fixtures),
+   and reusable across files via `conftest.py` — much more flexible for
+   sharing setup selectively.
+
 2. What does fixture `scope` control, and what's the trade-off between
    `function` and `session` scope?
+
+   **Answer:** `scope` controls how often the fixture is recreated —
+   `function` (default) creates it fresh per test (safest, fully
+   isolated, slower); `session` creates it once for the whole test run
+   (fast, but tests can leak state into each other if the fixture is
+   mutable).
+
 3. How does `conftest.py` make fixtures available without an import?
+
+   **Answer:** pytest automatically discovers `conftest.py` files in the
+   test directory tree and registers any fixtures defined there for every
+   test file in that directory (and subdirectories) — no explicit import
+   needed, it's just pytest's plugin/collection mechanism.
+
 4. What does `@pytest.mark.parametrize` do, and why is it preferable to
    writing separate near-duplicate test functions?
+
+   **Answer:** It runs the same test body once per set of input values you
+   provide, showing each as a separate test result. It's preferable
+   because you write the assertion logic once instead of copy-pasting
+   near-identical test functions for each input case.
+
+   ```python
+   @pytest.mark.parametrize("value,expected", [(1, 2), (2, 4), (3, 6)])
+   def test_double(value: int, expected: int) -> None:
+       assert double(value) == expected
+   ```
+
 5. What happens to a fixture's teardown code if the test itself raises
    an exception?
+
+   **Answer:** Teardown (code after `yield` in a fixture) still runs —
+   pytest guarantees cleanup happens whether the test passes, fails, or
+   errors, similar to a `finally` block.
 
 ## Senior-level considerations
 
 - Fixture design is itself an architectural decision for a test suite —
   a well-designed fixture hierarchy (small, composable, correctly scoped)
   makes writing new tests fast; a poorly designed one makes every new
-  test require understanding a tangle of shared state.
+  test require understanding a tangle of shared state. For example, a
+  `db_session` fixture that composes a smaller `engine` fixture is easier
+  to reuse and reason about than one giant fixture doing everything.
 - Test suite execution time matters at scale — knowing when to trade
   isolation for shared, more expensive fixtures (and how to do so safely)
-  is a real engineering trade-off, not just a testing detail.
+  is a real engineering trade-off, not just a testing detail. For example,
+  sharing one `session`-scoped Postgres container across a test file but
+  rolling back a transaction per test keeps speed without sacrificing
+  isolation.
 - A senior engineer treats test code with the same standards as
   production code: DRY setup via fixtures, clear naming, and readable
   failure output, since test code is read (and debugged) at least as
-  often as it's written.
+  often as it's written. For example, a fixture named `authenticated_client`
+  communicates intent far better than a generic `client2`.

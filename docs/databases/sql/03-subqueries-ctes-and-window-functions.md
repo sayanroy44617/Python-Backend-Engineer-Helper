@@ -167,25 +167,76 @@ FROM orders;
 
 1. What's the difference between a `GROUP BY` aggregate and a window
    function that also aggregates?
+
+   **Answer:** `GROUP BY` collapses many rows into one row per group,
+   losing the original row detail. A window function (`OVER (...)`)
+   computes the aggregate *per row* while keeping every original row
+   intact — you get both the detail and the aggregate side by side.
+
+   ```sql
+   SELECT user_id, amount,
+          SUM(amount) OVER (PARTITION BY user_id) AS user_total
+   FROM orders;
+   ```
+
 2. What is a correlated subquery, and why can it be slower than a join?
+
+   **Answer:** A correlated subquery references a column from the outer
+   query, so conceptually it re-runs once per outer row. A join usually
+   lets the planner do it in one combined pass instead of N separate
+   lookups.
+
 3. How would you compute a running total per user using a window
    function?
+
+   ```sql
+   SELECT user_id, order_date, amount,
+          SUM(amount) OVER (
+              PARTITION BY user_id ORDER BY order_date
+          ) AS running_total
+   FROM orders;
+   ```
+
 4. What's the difference between `RANK()`, `DENSE_RANK()`, and
    `ROW_NUMBER()`?
+
+   **Answer:** `ROW_NUMBER()` always gives unique, sequential numbers
+   (1,2,3,4) even for ties. `RANK()` gives ties the same rank but skips
+   the next number (1,2,2,4). `DENSE_RANK()` gives ties the same rank
+   without skipping (1,2,2,3).
+
 5. How would you query a hierarchical structure (e.g. an org chart) using
    a recursive CTE?
+
+   ```sql
+   WITH RECURSIVE org_chart AS (
+       SELECT id, manager_id, name FROM employees WHERE manager_id IS NULL
+       UNION ALL
+       SELECT e.id, e.manager_id, e.name
+       FROM employees e
+       JOIN org_chart o ON e.manager_id = o.id
+   )
+   SELECT * FROM org_chart;
+   ```
 
 ## Senior-level considerations
 
 - Window functions frequently replace what would otherwise require
   fetching all rows into application code and computing rankings/running
   totals in Python — pushing this into SQL is both faster and reduces
-  data transferred over the network.
+  data transferred over the network. For example, computing "top 3
+  products per category" with `ROW_NUMBER() OVER (PARTITION BY category
+  ORDER BY sales DESC)` avoids pulling every product into Python to sort
+  and slice per group.
 - Query readability matters at scale: CTEs make complex analytical queries
   reviewable and maintainable, which matters when queries live in
   migrations, reporting code, or are revisited months later during an
-  incident investigation.
+  incident investigation. For example, naming each CTE step
+  (`active_users AS (...)`, `recent_orders AS (...)`) reads almost like a
+  pipeline, versus one deeply nested subquery.
 - Recognizing when a correlated subquery is a performance smell (and
   rewriting it as a join or window function) is a common, high-value query
   optimization pattern surfaced during query plan analysis (see
   [Indexes and Query Optimization](04-indexes-and-query-optimization.md)).
+  For example, `EXPLAIN ANALYZE` showing a nested loop re-executing a
+  subquery thousands of times is a strong signal to rewrite it as a join.

@@ -209,27 +209,47 @@ read the victim's token to do so).
 
 1. What does HTTPS actually protect against, and why should HSTS be
    configured in addition to a plain HTTP→HTTPS redirect?
+
+   **Answer:** HTTPS encrypts traffic and makes tampering visible, so people on the network cannot quietly read or change requests in transit. HSTS matters because it tells the browser to skip HTTP entirely on later visits, which closes the "first request was plain HTTP" gap.
+
 2. Explain what CORS does and doesn't protect — who is it protecting, the
    server or the browser's user?
+
+   **Answer:** CORS protects the browser user by controlling whether JavaScript on one origin may read responses from another origin. It does not stop curl, backend services, or other non-browser clients from calling your API directly.
+
 3. Why can't you combine `allow_origins=["*"]` with
    `allow_credentials=True`?
+
+   **Answer:** Because once cookies or other credentials are involved, the server has to name the exact allowed origin instead of saying "everyone." Browsers reject the wildcard-plus-credentials combination because it's too broad to be safe.
+
 4. Walk through a CSRF attack scenario and explain how `SameSite` cookies
    prevent it.
+
+   **Answer:** In a CSRF attack, the victim is logged in, visits a malicious page, and that page causes the browser to send a state-changing request to your app with the victim's session cookie attached. `SameSite=Lax` or `Strict` blocks that cookie on cross-site requests, so the forged request arrives unauthenticated.
+
 5. Why are token-in-header APIs generally less exposed to classic CSRF
    than cookie-based session APIs?
+
+   **Answer:** Classic CSRF depends on the browser automatically attaching credentials. An `Authorization` header is normally added by trusted client code, not by the browser on a random cross-site form post, so the attack does not map cleanly the same way.
 
 ## Senior-level considerations
 
 - CORS misconfiguration is a common, easy-to-overlook production issue
   precisely because it's a browser-enforced mechanism — server logs alone
   won't show a CORS failure; it only surfaces in the browser console,
-  making it a debugging blind spot without frontend visibility.
+  making it a debugging blind spot without frontend visibility; for
+  example, the API may return `200 OK`, while the frontend still sees a
+  blocked response because `Access-Control-Allow-Origin` is missing.
 - Defense-in-depth applies here: `SameSite` cookies substantially reduce
   CSRF risk, but explicit CSRF tokens remain valuable for the most
   sensitive operations (fund transfers, permission changes) as a second
   layer, given `SameSite`'s behavior still has edge cases (older browsers,
-  certain cross-site navigation patterns).
+  certain cross-site navigation patterns); for example, a banking app may
+  require both a valid CSRF token and a `SameSite=Strict` session cookie
+  before allowing a transfer.
 - HTTPS, CORS, and CSRF protections all need to be considered together
   when designing an authentication scheme (cookie vs bearer token) — the
   choice has cascading security implications across all three, not just
-  a convenience trade-off.
+  a convenience trade-off; for example, choosing cookie auth means you
+  must design `SameSite` and CSRF defenses up front, while a bearer-token
+  SPA usually shifts the main focus toward token storage and CORS.
