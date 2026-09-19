@@ -42,3 +42,4 @@ handbook already ends with its own "Interview questions" and
 6. [System Design](06-system-design.md)
 7. [DevOps](07-devops.md)
 8. [Behavioral / Project Questions](08-behavioral-and-project-questions.md)
+9. [A Mental Model for Any System Design Problem](09-how-to-approach-system-design-problem.md)

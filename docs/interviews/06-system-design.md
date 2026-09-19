@@ -79,3 +79,6 @@ interview-specific *framework* for structuring your 30-45 minutes.
   and
   [CAP Theorem, Consistency, and Availability](../system-design/04-cap-theorem-consistency-and-availability.md)
   are the two pages most commonly probed in a deep-dive.
+- [A Mental Model for Any System Design Problem](09-how-to-approach-system-design-problem.md)
+  — a narrative walkthrough of *why* each technique above gets
+  introduced, in the order problems actually appear as load grows.

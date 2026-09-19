@@ -165,6 +165,7 @@ nav:
       - System Design: interviews/06-system-design.md
       - DevOps: interviews/07-devops.md
       - Behavioral / Project Questions: interviews/08-behavioral-and-project-questions.md
+      - A Mental Model for Any System Design Problem: interviews/09-how-to-approach-system-design-problem.md
 
 markdown_extensions:
   - admonition
