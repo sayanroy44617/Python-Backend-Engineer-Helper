@@ -169,51 +169,51 @@ level connections impractical at scale.
 
 ## Interview questions
 
-1. What is a deadlock, and how does PostgreSQL resolve one when it
-   detects it?
+- What is a deadlock, and how does PostgreSQL resolve one when it
+    detects it?
 
-   **Answer:** A deadlock is two transactions each waiting on a lock the
-   other one holds, so neither can ever proceed. PostgreSQL detects the
-   cycle and forcibly aborts one of the transactions (raising a
-   `deadlock detected` error), letting the other continue.
+    **Answer:** A deadlock is two transactions each waiting on a lock the
+    other one holds, so neither can ever proceed. PostgreSQL detects the
+    cycle and forcibly aborts one of the transactions (raising a
+    `deadlock detected` error), letting the other continue.
 
-2. What's the standard technique for preventing deadlocks when multiple
-   rows need to be locked together?
+- What's the standard technique for preventing deadlocks when multiple
+    rows need to be locked together?
 
-   **Answer:** Always lock rows in the same consistent order across every
-   transaction (e.g. always by ascending `id`) — if everyone acquires
-   locks in the same order, a circular wait can't form.
+    **Answer:** Always lock rows in the same consistent order across every
+    transaction (e.g. always by ascending `id`) — if everyone acquires
+    locks in the same order, a circular wait can't form.
 
-3. What does `SELECT ... FOR UPDATE` do, and what problem does it solve
-   that a plain `SELECT` followed by `UPDATE` doesn't?
+- What does `SELECT ... FOR UPDATE` do, and what problem does it solve
+    that a plain `SELECT` followed by `UPDATE` doesn't?
 
-   **Answer:** It locks the selected rows so no other transaction can
-   modify them until this transaction commits/rolls back. A plain
-   `SELECT` then `UPDATE` has a gap where another transaction can change
-   the row in between, causing a lost update.
+    **Answer:** It locks the selected rows so no other transaction can
+    modify them until this transaction commits/rolls back. A plain
+    `SELECT` then `UPDATE` has a gap where another transaction can change
+    the row in between, causing a lost update.
 
-   ```sql
-   SELECT balance FROM accounts WHERE id = 1 FOR UPDATE;
-   -- balance is now locked until this transaction ends
-   UPDATE accounts SET balance = balance - 100 WHERE id = 1;
-   ```
+    ```sql
+    SELECT balance FROM accounts WHERE id = 1 FOR UPDATE;
+    -- balance is now locked until this transaction ends
+    UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+    ```
 
-4. Why is connection pooling necessary, and what goes wrong without it?
+- Why is connection pooling necessary, and what goes wrong without it?
 
-   **Answer:** Opening a new DB connection is relatively expensive (TCP
-   handshake, auth, memory allocation on the server). Without pooling,
-   every request pays that cost and the DB can run out of available
-   connections under load; pooling reuses a fixed set of already-open
-   connections instead.
+    **Answer:** Opening a new DB connection is relatively expensive (TCP
+    handshake, auth, memory allocation on the server). Without pooling,
+    every request pays that cost and the DB can run out of available
+    connections under load; pooling reuses a fixed set of already-open
+    connections instead.
 
-5. What's the purpose of an external pooler like PgBouncer, given that
-   SQLAlchemy already has its own connection pool?
+- What's the purpose of an external pooler like PgBouncer, given that
+    SQLAlchemy already has its own connection pool?
 
-   **Answer:** SQLAlchemy's pool is per-process/per-instance — with many
-   app instances, the total connection count still multiplies
-   (instances × pool size) and can exceed Postgres's `max_connections`.
-   PgBouncer sits in front of Postgres and multiplexes many app-side
-   connections onto a much smaller set of real DB connections.
+    **Answer:** SQLAlchemy's pool is per-process/per-instance — with many
+    app instances, the total connection count still multiplies
+    (instances × pool size) and can exceed Postgres's `max_connections`.
+    PgBouncer sits in front of Postgres and multiplexes many app-side
+    connections onto a much smaller set of real DB connections.
 
 ## Senior-level considerations
 

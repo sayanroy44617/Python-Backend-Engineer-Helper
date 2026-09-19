@@ -175,49 +175,49 @@ dedicated tests).
 
 ## Interview questions
 
-1. How does FastAPI generate its OpenAPI schema without a separate spec
-   file?
+- How does FastAPI generate its OpenAPI schema without a separate spec
+    file?
 
-   **Answer:** It builds the schema from your route signatures, type hints, Pydantic models, and route metadata like `response_model` and `summary`. In practice, the code is the source of truth and the docs are generated from that.
+    **Answer:** It builds the schema from your route signatures, type hints, Pydantic models, and route metadata like `response_model` and `summary`. In practice, the code is the source of truth and the docs are generated from that.
 
-   ```python
-   from pydantic import BaseModel
+    ```python
+    from pydantic import BaseModel
 
-   class UserOut(BaseModel):
+    class UserOut(BaseModel):
        id: int
-   ```
+    ```
 
-2. Why is `TestClient` generally faster and more reliable than spinning up
-   a real server for tests?
+- Why is `TestClient` generally faster and more reliable than spinning up
+    a real server for tests?
 
-   **Answer:** It calls the ASGI app in-process, so there is no real socket, no process management, and less test flakiness. You still exercise routing, validation, dependencies, and exception handling, which is what most route tests actually need.
+    **Answer:** It calls the ASGI app in-process, so there is no real socket, no process management, and less test flakiness. You still exercise routing, validation, dependencies, and exception handling, which is what most route tests actually need.
 
-3. How would you test a route that requires authentication without
-   generating a real token in every test?
+- How would you test a route that requires authentication without
+    generating a real token in every test?
 
-   **Answer:** Override `get_current_user` so the test injects a known user directly. That keeps the test focused on the route behavior instead of dragging token creation into every case.
+    **Answer:** Override `get_current_user` so the test injects a known user directly. That keeps the test focused on the route behavior instead of dragging token creation into every case.
 
-   ```python
-   app.dependency_overrides[get_current_user] = lambda: User(id=1, name="Sayan")
-   response = client.get("/me")
-   assert response.status_code == 200
-   ```
+    ```python
+    app.dependency_overrides[get_current_user] = lambda: User(id=1, name="Sayan")
+    response = client.get("/me")
+    assert response.status_code == 200
+    ```
 
-4. What's the risk of not resetting `app.dependency_overrides` between
-   tests?
+- What's the risk of not resetting `app.dependency_overrides` between
+    tests?
 
-   **Answer:** Overrides leak across test cases, so one test can accidentally change the behavior of another. That gives you false positives, confusing failures, and order-dependent tests.
+    **Answer:** Overrides leak across test cases, so one test can accidentally change the behavior of another. That gives you false positives, confusing failures, and order-dependent tests.
 
-5. When would you reach for `httpx.AsyncClient` over the standard
-   `TestClient`?
+- When would you reach for `httpx.AsyncClient` over the standard
+    `TestClient`?
 
-   **Answer:** Use it when the test itself needs to `await` async setup, async DB calls, or other async helpers. If the whole test is synchronous, `TestClient` is usually simpler.
+    **Answer:** Use it when the test itself needs to `await` async setup, async DB calls, or other async helpers. If the whole test is synchronous, `TestClient` is usually simpler.
 
-   ```python
-   from httpx import ASGITransport, AsyncClient
+    ```python
+    from httpx import ASGITransport, AsyncClient
 
-   transport = ASGITransport(app=app)
-   ```
+    transport = ASGITransport(app=app)
+    ```
 
 ## Senior-level considerations
 

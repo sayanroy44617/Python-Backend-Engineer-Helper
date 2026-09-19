@@ -132,46 +132,46 @@ Location: /users/42
 
 ## Interview questions
 
-1. What's the difference between a "safe" and an "idempotent" HTTP method?
-   Give an example of each that's one but not the other.
+- What's the difference between a "safe" and an "idempotent" HTTP method?
+    Give an example of each that's one but not the other.
 
-   **Answer:** Safe means it never changes server state (`GET`, `HEAD`).
-   Idempotent means calling it once or ten times leaves the server in the
-   same end state — `DELETE /orders/1` is idempotent (still gone the
-   second time) but not safe (it did change state); `POST` is neither.
+    **Answer:** Safe means it never changes server state (`GET`, `HEAD`).
+    Idempotent means calling it once or ten times leaves the server in the
+    same end state — `DELETE /orders/1` is idempotent (still gone the
+    second time) but not safe (it did change state); `POST` is neither.
 
-2. When would you use `401` vs `403`? Why does the distinction matter to
-   API clients?
+- When would you use `401` vs `403`? Why does the distinction matter to
+    API clients?
 
-   **Answer:** `401` means "I don't know who you are" — no/invalid
-   credentials, so the client should try logging in again. `403` means
-   "I know who you are, but you're not allowed" — retrying with the same
-   token won't help, only different permissions will.
+    **Answer:** `401` means "I don't know who you are" — no/invalid
+    credentials, so the client should try logging in again. `403` means
+    "I know who you are, but you're not allowed" — retrying with the same
+    token won't help, only different permissions will.
 
-3. Why does a `201 Created` response typically include a `Location`
-   header?
+- Why does a `201 Created` response typically include a `Location`
+    header?
 
-   **Answer:** It tells the client exactly where the newly created
-   resource now lives (e.g. `Location: /orders/42`), so the client doesn't
-   have to guess the URL or re-parse the response body to fetch/update it
-   next.
+    **Answer:** It tells the client exactly where the newly created
+    resource now lives (e.g. `Location: /orders/42`), so the client doesn't
+    have to guess the URL or re-parse the response body to fetch/update it
+    next.
 
-4. What's the difference between `422` and `400`? Which is more precise
-   for a validation error?
+- What's the difference between `422` and `400`? Which is more precise
+    for a validation error?
 
-   **Answer:** `400` is a generic "malformed request" (bad JSON, wrong
-   content type). `422` means the request was well-formed but the
-   *values* failed validation (e.g. `age: -5`) — `422` is the more precise
-   choice for field-level validation errors, which is why FastAPI/Pydantic
-   uses it by default.
+    **Answer:** `400` is a generic "malformed request" (bad JSON, wrong
+    content type). `422` means the request was well-formed but the
+    *values* failed validation (e.g. `age: -5`) — `422` is the more precise
+    choice for field-level validation errors, which is why FastAPI/Pydantic
+    uses it by default.
 
-5. Why is `GET` expected to have no side effects, and what breaks if you
-   violate that expectation?
+- Why is `GET` expected to have no side effects, and what breaks if you
+    violate that expectation?
 
-   **Answer:** Browsers, proxies, and CDNs assume `GET` is safe to
-   prefetch, retry, and cache automatically. If `GET /delete-account`
-   actually deletes something, a link preview crawler or browser prefetch
-   can trigger it accidentally.
+    **Answer:** Browsers, proxies, and CDNs assume `GET` is safe to
+    prefetch, retry, and cache automatically. If `GET /delete-account`
+    actually deletes something, a link preview crawler or browser prefetch
+    can trigger it accidentally.
 
 ## Senior-level considerations
 

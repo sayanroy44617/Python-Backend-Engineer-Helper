@@ -212,100 +212,100 @@ alone. Runtime validation requires a library (Pydantic) or explicit checks.
 
 ## Interview questions
 
-1. Are type hints enforced at runtime? What actually validates types in a
-   FastAPI app?
+- Are type hints enforced at runtime? What actually validates types in a
+    FastAPI app?
 
-   **Answer:** No. Python mostly ignores annotations at runtime; in FastAPI, request/response validation is typically done by Pydantic based on those annotations.
+    **Answer:** No. Python mostly ignores annotations at runtime; in FastAPI, request/response validation is typically done by Pydantic based on those annotations.
 
-   ```python
-   def double(value: int) -> int:
+    ```python
+    def double(value: int) -> int:
        return value * 2
 
-   print(double("3"))  # "33" at runtime, unless another layer validates input
-   ```
+    print(double("3"))  # "33" at runtime, unless another layer validates input
+    ```
 
-2. What's the difference between `Optional[int]` and `int | None`? Are they
-   equivalent?
+- What's the difference between `Optional[int]` and `int | None`? Are they
+    equivalent?
 
-   **Answer:** They're equivalent in meaning: both say the value can be an `int` or `None`. `int | None` is just the newer, cleaner syntax in modern Python.
+    **Answer:** They're equivalent in meaning: both say the value can be an `int` or `None`. `int | None` is just the newer, cleaner syntax in modern Python.
 
-   ```python
-   def a(value: Optional[int]) -> int:
+    ```python
+    def a(value: Optional[int]) -> int:
        return value or 0
 
-   def b(value: int | None) -> int:
+    def b(value: int | None) -> int:
        return value or 0
-   ```
+    ```
 
-3. What is a `Protocol`, and how does it differ from an abstract base
-   class?
+- What is a `Protocol`, and how does it differ from an abstract base
+    class?
 
-   **Answer:** A `Protocol` says "anything with this shape is fine," even if it doesn't inherit from anything. An abstract base class is nominal: classes usually opt in by inheriting from it.
+    **Answer:** A `Protocol` says "anything with this shape is fine," even if it doesn't inherit from anything. An abstract base class is nominal: classes usually opt in by inheriting from it.
 
-   ```python
-   from typing import Protocol
+    ```python
+    from typing import Protocol
 
-   class SupportsClose(Protocol):
+    class SupportsClose(Protocol):
        def close(self) -> None: ...
-   ```
+    ```
 
-4. When would you use `TypedDict` instead of a full class or a Pydantic
-   model?
+- When would you use `TypedDict` instead of a full class or a Pydantic
+    model?
 
-   **Answer:** Use `TypedDict` when you want a plain dict with a known shape, usually for lightweight JSON-ish data inside the app. If you need runtime validation, methods, or richer behavior, use Pydantic or a class instead.
+    **Answer:** Use `TypedDict` when you want a plain dict with a known shape, usually for lightweight JSON-ish data inside the app. If you need runtime validation, methods, or richer behavior, use Pydantic or a class instead.
 
-   ```python
-   from typing import TypedDict
+    ```python
+    from typing import TypedDict
 
-   class UserRow(TypedDict):
+    class UserRow(TypedDict):
        id: int
        email: str
-   ```
+    ```
 
-5. Why might a large codebase enforce mypy in CI even though Python is
-   dynamically typed?
+- Why might a large codebase enforce mypy in CI even though Python is
+    dynamically typed?
 
-   **Answer:** Because static checks catch contract drift early, before bad assumptions spread across services and teams. In a big codebase, that reduces regressions and makes refactors safer.
+    **Answer:** Because static checks catch contract drift early, before bad assumptions spread across services and teams. In a big codebase, that reduces regressions and makes refactors safer.
 
  6. What problem does `NewType` solve that a plain type alias doesn't?
 
-   **Answer:** A plain alias is just another name for the same type, so `UserId = int` doesn't stop mixups. `NewType` gives type checkers a distinct logical type without changing runtime cost.
+    **Answer:** A plain alias is just another name for the same type, so `UserId = int` doesn't stop mixups. `NewType` gives type checkers a distinct logical type without changing runtime cost.
 
-   ```python
-   from typing import NewType
+    ```python
+    from typing import NewType
 
-   UserId = NewType("UserId", int)
-   OrderId = NewType("OrderId", int)
-   ```
+    UserId = NewType("UserId", int)
+    OrderId = NewType("OrderId", int)
+    ```
 
-7. What's the difference between `Literal["fast", "slow"]` and just using
-   `str`? What does it buy you?
+- What's the difference between `Literal["fast", "slow"]` and just using
+    `str`? What does it buy you?
 
-   **Answer:** `str` allows any string; `Literal` narrows it to a fixed set of allowed values. That gives better autocomplete and catches invalid modes during type checking.
+    **Answer:** `str` allows any string; `Literal` narrows it to a fixed set of allowed values. That gives better autocomplete and catches invalid modes during type checking.
 
-   ```python
-   from typing import Literal
+    ```python
+    from typing import Literal
 
-   def run(mode: Literal["fast", "slow"]) -> None:
+    def run(mode: Literal["fast", "slow"]) -> None:
        print(mode)
-   ```
+    ```
 
-8. What is `@overload` for, given that the actual implementation is a single
-   function?
+- What is `@overload` for, given that the actual implementation is a single
+    function?
 
-   **Answer:** It's for teaching the type checker multiple valid call shapes when one runtime implementation handles them all. That keeps call sites precise without splitting the function apart.
+    **Answer:** It's for teaching the type checker multiple valid call shapes when one runtime implementation handles them all. That keeps call sites precise without splitting the function apart.
 
-9. How does `Annotated` let FastAPI combine a type hint with validation
-   metadata (e.g. `Query(le=100)`) in one place?
+- How does `Annotated` let FastAPI combine a type hint with validation
+    metadata (e.g. `Query(le=100)`) in one place?
 
-   **Answer:** `Annotated` keeps the real Python type and attaches framework metadata next to it. FastAPI reads both pieces, so one annotation can say "this is an `int`, and it must be `<= 100`."
+    **Answer:** `Annotated` keeps the real Python type and attaches framework metadata next to it. FastAPI reads both pieces, so one annotation can say "this is an `int`, and it must be `<= 100`."
 
-   ```python
-   from typing import Annotated
-   from fastapi import Query
+    ```python
+    from typing import Annotated
+    from fastapi import Query
 
-   Limit = Annotated[int, Query(le=100)]
-   ```
+    Limit = Annotated[int, Query(le=100)]
+    ```
 
 ## Senior-level considerations
 

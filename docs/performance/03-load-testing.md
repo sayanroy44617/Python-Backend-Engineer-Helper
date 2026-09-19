@@ -182,51 +182,51 @@ and hoping they hold up in production.
 
 ## Interview questions
 
-1. What's the difference between a load test, a stress test, and a soak
-   test, and what does each uniquely reveal?
+- What's the difference between a load test, a stress test, and a soak
+    test, and what does each uniquely reveal?
 
-   **Answer:** A load test checks behavior at an expected/target traffic
-   level. A stress test keeps increasing load until something breaks,
-   revealing the actual breaking point and which resource saturates
-   first. A soak test runs sustained moderate load for a long time,
-   revealing slow leaks (memory growth, connection leaks) that only show
-   up after hours, not seconds.
+    **Answer:** A load test checks behavior at an expected/target traffic
+    level. A stress test keeps increasing load until something breaks,
+    revealing the actual breaking point and which resource saturates
+    first. A soak test runs sustained moderate load for a long time,
+    revealing slow leaks (memory growth, connection leaks) that only show
+    up after hours, not seconds.
 
-2. Why is p99 latency often more important than average latency for
-   understanding real user experience?
+- Why is p99 latency often more important than average latency for
+    understanding real user experience?
 
-   **Answer:** Average latency hides outliers — a few very slow requests
-   get averaged away by many fast ones. p99 tells you what your slowest
-   1% of users actually experience, which matters because that's still a
-   lot of real people at scale, and often points to a real bottleneck the
-   average masks.
+    **Answer:** Average latency hides outliers — a few very slow requests
+    get averaged away by many fast ones. p99 tells you what your slowest
+    1% of users actually experience, which matters because that's still a
+    lot of real people at scale, and often points to a real bottleneck the
+    average masks.
 
-3. How would you use a load test to validate a connection pool's
-   `pool_size` configuration?
+- How would you use a load test to validate a connection pool's
+    `pool_size` configuration?
 
-   **Answer:** Ramp concurrent load up past what the pool is sized for
-   and watch for requests queuing/timing out waiting for a connection —
-   if errors/latency spike right around the expected concurrency level,
-   that confirms the pool size (or the DB's `max_connections`) is the
-   actual limiting factor.
+    **Answer:** Ramp concurrent load up past what the pool is sized for
+    and watch for requests queuing/timing out waiting for a connection —
+    if errors/latency spike right around the expected concurrency level,
+    that confirms the pool size (or the DB's `max_connections`) is the
+    actual limiting factor.
 
-4. What risks come with running a load test directly against a
-   production environment, and how would you mitigate them?
+- What risks come with running a load test directly against a
+    production environment, and how would you mitigate them?
 
-   **Answer:** It can degrade real user experience or even cause an
-   outage if it saturates shared resources like the database. Mitigate
-   by testing during low-traffic windows, capping load below a safe
-   threshold, having a kill switch, and ideally testing against a
-   production-like staging environment instead.
+    **Answer:** It can degrade real user experience or even cause an
+    outage if it saturates shared resources like the database. Mitigate
+    by testing during low-traffic windows, capping load below a safe
+    threshold, having a kill switch, and ideally testing against a
+    production-like staging environment instead.
 
-5. Why does the realism of the test environment (data volume, indexes,
-   network topology) matter for how much you can trust load test results?
+- Why does the realism of the test environment (data volume, indexes,
+    network topology) matter for how much you can trust load test results?
 
-   **Answer:** A query that's fast against a mostly-empty test database
-   can be dramatically slower against production-scale data volumes
-   (different query plans, real index usage, real lock contention) — so
-   a test environment that doesn't resemble production can give a false
-   sense of confidence.
+    **Answer:** A query that's fast against a mostly-empty test database
+    can be dramatically slower against production-scale data volumes
+    (different query plans, real index usage, real lock contention) — so
+    a test environment that doesn't resemble production can give a false
+    sense of confidence.
 
 ## Senior-level considerations
 

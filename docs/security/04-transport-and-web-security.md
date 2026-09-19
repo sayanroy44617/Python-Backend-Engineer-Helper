@@ -207,30 +207,30 @@ read the victim's token to do so).
 
 ## Interview questions
 
-1. What does HTTPS actually protect against, and why should HSTS be
-   configured in addition to a plain HTTP→HTTPS redirect?
+- What does HTTPS actually protect against, and why should HSTS be
+    configured in addition to a plain HTTP→HTTPS redirect?
 
-   **Answer:** HTTPS encrypts traffic and makes tampering visible, so people on the network cannot quietly read or change requests in transit. HSTS matters because it tells the browser to skip HTTP entirely on later visits, which closes the "first request was plain HTTP" gap.
+    **Answer:** HTTPS encrypts traffic and makes tampering visible, so people on the network cannot quietly read or change requests in transit. HSTS matters because it tells the browser to skip HTTP entirely on later visits, which closes the "first request was plain HTTP" gap.
 
-2. Explain what CORS does and doesn't protect — who is it protecting, the
-   server or the browser's user?
+- Explain what CORS does and doesn't protect — who is it protecting, the
+    server or the browser's user?
 
-   **Answer:** CORS protects the browser user by controlling whether JavaScript on one origin may read responses from another origin. It does not stop curl, backend services, or other non-browser clients from calling your API directly.
+    **Answer:** CORS protects the browser user by controlling whether JavaScript on one origin may read responses from another origin. It does not stop curl, backend services, or other non-browser clients from calling your API directly.
 
-3. Why can't you combine `allow_origins=["*"]` with
-   `allow_credentials=True`?
+- Why can't you combine `allow_origins=["*"]` with
+    `allow_credentials=True`?
 
-   **Answer:** Because once cookies or other credentials are involved, the server has to name the exact allowed origin instead of saying "everyone." Browsers reject the wildcard-plus-credentials combination because it's too broad to be safe.
+    **Answer:** Because once cookies or other credentials are involved, the server has to name the exact allowed origin instead of saying "everyone." Browsers reject the wildcard-plus-credentials combination because it's too broad to be safe.
 
-4. Walk through a CSRF attack scenario and explain how `SameSite` cookies
-   prevent it.
+- Walk through a CSRF attack scenario and explain how `SameSite` cookies
+    prevent it.
 
-   **Answer:** In a CSRF attack, the victim is logged in, visits a malicious page, and that page causes the browser to send a state-changing request to your app with the victim's session cookie attached. `SameSite=Lax` or `Strict` blocks that cookie on cross-site requests, so the forged request arrives unauthenticated.
+    **Answer:** In a CSRF attack, the victim is logged in, visits a malicious page, and that page causes the browser to send a state-changing request to your app with the victim's session cookie attached. `SameSite=Lax` or `Strict` blocks that cookie on cross-site requests, so the forged request arrives unauthenticated.
 
-5. Why are token-in-header APIs generally less exposed to classic CSRF
-   than cookie-based session APIs?
+- Why are token-in-header APIs generally less exposed to classic CSRF
+    than cookie-based session APIs?
 
-   **Answer:** Classic CSRF depends on the browser automatically attaching credentials. An `Authorization` header is normally added by trusted client code, not by the browser on a random cross-site form post, so the attack does not map cleanly the same way.
+    **Answer:** Classic CSRF depends on the browser automatically attaching credentials. An `Authorization` header is normally added by trusted client code, not by the browser on a random cross-site form post, so the attack does not map cleanly the same way.
 
 ## Senior-level considerations
 

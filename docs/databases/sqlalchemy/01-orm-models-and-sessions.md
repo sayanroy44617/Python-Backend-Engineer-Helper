@@ -176,47 +176,47 @@ a single request's lifetime, not shared globally across requests.
 
 ## Interview questions
 
-1. What does the SQLAlchemy Session actually do — what's the "unit of
-   work" pattern?
+- What does the SQLAlchemy Session actually do — what's the "unit of
+    work" pattern?
 
-   **Answer:** The Session tracks every object you add/modify/delete
-   in-memory and batches all the resulting SQL into one flush at commit
-   time, instead of sending a statement immediately for every change —
-   that batching-and-committing-together approach is the "unit of work"
-   pattern.
+    **Answer:** The Session tracks every object you add/modify/delete
+    in-memory and batches all the resulting SQL into one flush at commit
+    time, instead of sending a statement immediately for every change —
+    that batching-and-committing-together approach is the "unit of work"
+    pattern.
 
-2. What's the difference between `flush()` and `commit()`?
+- What's the difference between `flush()` and `commit()`?
 
-   **Answer:** `flush()` sends pending SQL to the database (so it's
-   visible within the current transaction) but doesn't end the
-   transaction. `commit()` flushes *and* commits the transaction, making
-   changes permanent and visible to others.
+    **Answer:** `flush()` sends pending SQL to the database (so it's
+    visible within the current transaction) but doesn't end the
+    transaction. `commit()` flushes *and* commits the transaction, making
+    changes permanent and visible to others.
 
-3. What is the identity map, and what guarantee does it provide within a
-   single session?
+- What is the identity map, and what guarantee does it provide within a
+    single session?
 
-   **Answer:** The identity map ensures that querying the same row twice
-   in one session returns the *same Python object*, not two separate
-   copies — so mutating it once is consistent everywhere you reference it
-   in that session.
+    **Answer:** The identity map ensures that querying the same row twice
+    in one session returns the *same Python object*, not two separate
+    copies — so mutating it once is consistent everywhere you reference it
+    in that session.
 
-4. What are the transient/pending/persistent/detached object states, and
-   when does `DetachedInstanceError` occur?
+- What are the transient/pending/persistent/detached object states, and
+    when does `DetachedInstanceError` occur?
 
-   **Answer:** Transient = created but never added to a session.
-   Pending = added, not flushed yet. Persistent = flushed/committed, has a
-   DB row, tracked by a session. Detached = was persistent, but its
-   session closed — accessing a lazy-loaded attribute on it then raises
-   `DetachedInstanceError` because there's no session left to run the
-   query.
+    **Answer:** Transient = created but never added to a session.
+    Pending = added, not flushed yet. Persistent = flushed/committed, has a
+    DB row, tracked by a session. Detached = was persistent, but its
+    session closed — accessing a lazy-loaded attribute on it then raises
+    `DetachedInstanceError` because there's no session left to run the
+    query.
 
-5. Why is "one session per request" the standard pattern in a web
-   application, rather than one global session?
+- Why is "one session per request" the standard pattern in a web
+    application, rather than one global session?
 
-   **Answer:** A shared global session accumulates state across unrelated
-   requests, risking stale identity-map data and objects leaking between
-   users. A fresh session per request keeps each request's scope isolated
-   and short-lived, matching how a transaction should be scoped.
+    **Answer:** A shared global session accumulates state across unrelated
+    requests, risking stale identity-map data and objects leaking between
+    users. A fresh session per request keeps each request's scope isolated
+    and short-lived, matching how a transaction should be scoped.
 
 ## Senior-level considerations
 

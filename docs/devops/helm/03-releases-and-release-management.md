@@ -148,51 +148,51 @@ deployment or the hundredth.
 
 ## Interview questions
 
-1. What does a Helm "release" represent that a plain `kubectl apply`
-   doesn't track?
+- What does a Helm "release" represent that a plain `kubectl apply`
+    doesn't track?
 
-   **Answer:** A release is a named, versioned history of everything Helm
-   applied for that install — every upgrade creates a new revision Helm
-   remembers, so you can see what changed and roll back. Plain `kubectl
-   apply` has no built-in history at all.
+    **Answer:** A release is a named, versioned history of everything Helm
+    applied for that install — every upgrade creates a new revision Helm
+    remembers, so you can see what changed and roll back. Plain `kubectl
+    apply` has no built-in history at all.
 
-2. How does `helm rollback` work, and what's the relationship between
-   revisions and rollback?
+- How does `helm rollback` work, and what's the relationship between
+    revisions and rollback?
 
-   **Answer:** Helm stores the rendered manifests for every past revision;
-   `helm rollback <release> <revision>` just re-applies an older revision's
-   manifests as a new revision. Nothing is "undone" magically — it's a
-   forward apply of old state.
+    **Answer:** Helm stores the rendered manifests for every past revision;
+    `helm rollback <release> <revision>` just re-applies an older revision's
+    manifests as a new revision. Nothing is "undone" magically — it's a
+    forward apply of old state.
 
-   ```bash
-   helm rollback my-app 3
-   ```
+    ```bash
+    helm rollback my-app 3
+    ```
 
-3. Why is `--atomic` important for production upgrades, and what does it
-   actually do on failure?
+- Why is `--atomic` important for production upgrades, and what does it
+    actually do on failure?
 
-   **Answer:** `--atomic` tells Helm to automatically roll back to the
-   previous working revision if the upgrade fails or times out, so you don't
-   get stuck with half-applied, broken state in production.
+    **Answer:** `--atomic` tells Helm to automatically roll back to the
+    previous working revision if the upgrade fails or times out, so you don't
+    get stuck with half-applied, broken state in production.
 
-   ```bash
-   helm upgrade my-app ./chart --atomic --timeout 5m
-   ```
+    ```bash
+    helm upgrade my-app ./chart --atomic --timeout 5m
+    ```
 
-4. Why is `helm upgrade --install` the standard pattern in CI/CD
-   pipelines rather than `helm install` alone?
+- Why is `helm upgrade --install` the standard pattern in CI/CD
+    pipelines rather than `helm install` alone?
 
-   **Answer:** `--install` makes the command idempotent — it installs if the
-   release doesn't exist yet, or upgrades it if it does. That means the same
-   pipeline command works for both the first deploy and every deploy after.
+    **Answer:** `--install` makes the command idempotent — it installs if the
+    release doesn't exist yet, or upgrades it if it does. That means the same
+    pipeline command works for both the first deploy and every deploy after.
 
-5. What's the difference between chart version, application version, and
-   release revision?
+- What's the difference between chart version, application version, and
+    release revision?
 
-   **Answer:** Chart version (`version`) tracks the templates/values
-   changing, app version (`appVersion`) documents which app version is
-   deployed, and release revision is simply an incrementing counter Helm
-   keeps every time you install/upgrade/rollback that specific release.
+    **Answer:** Chart version (`version`) tracks the templates/values
+    changing, app version (`appVersion`) documents which app version is
+    deployed, and release revision is simply an incrementing counter Helm
+    keeps every time you install/upgrade/rollback that specific release.
 
 ## Senior-level considerations
 

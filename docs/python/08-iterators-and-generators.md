@@ -176,72 +176,72 @@ re-create the generator.
 
 ## Interview questions
 
-1. What's the difference between an iterable and an iterator?
+- What's the difference between an iterable and an iterator?
 
-   **Answer:** An iterable is something you can ask for an iterator from, like a `list` or `dict`. An iterator is the object that keeps the iteration state and knows what the next item is.
+    **Answer:** An iterable is something you can ask for an iterator from, like a `list` or `dict`. An iterator is the object that keeps the iteration state and knows what the next item is.
 
-   ```python
-   items: list[int] = [1, 2, 3]
-   iterator = iter(items)
-   print(next(iterator))  # 1
-   ```
+    ```python
+    items: list[int] = [1, 2, 3]
+    iterator = iter(items)
+    print(next(iterator))  # 1
+    ```
 
-2. How does a `for` loop use `iter()` and `next()` under the hood?
+- How does a `for` loop use `iter()` and `next()` under the hood?
 
-   **Answer:** `for` first calls `iter(obj)`, then keeps calling `next()` until it gets `StopIteration`. That's why anything implementing the iterator protocol works in a normal loop.
+    **Answer:** `for` first calls `iter(obj)`, then keeps calling `next()` until it gets `StopIteration`. That's why anything implementing the iterator protocol works in a normal loop.
 
-   ```python
-   values = iter([10, 20])
-   print(next(values))  # 10
-   print(next(values))  # 20
-   ```
+    ```python
+    values = iter([10, 20])
+    print(next(values))  # 10
+    print(next(values))  # 20
+    ```
 
-3. Why are generators more memory-efficient than returning a list? Give a
-   backend example.
+- Why are generators more memory-efficient than returning a list? Give a
+    backend example.
 
-   **Answer:** A generator yields one item at a time instead of building the full result up front, so memory stays flat even for large inputs. Typical backend case: streaming rows from a big query or lines from a log file.
+    **Answer:** A generator yields one item at a time instead of building the full result up front, so memory stays flat even for large inputs. Typical backend case: streaming rows from a big query or lines from a log file.
 
-   ```python
-   from collections.abc import Iterator
+    ```python
+    from collections.abc import Iterator
 
-   def user_ids() -> Iterator[int]:
+    def user_ids() -> Iterator[int]:
        for user_id in range(1_000_000):
            yield user_id
-   ```
+    ```
 
-4. What does `yield from` do, and why is it useful when composing
-   generators?
+- What does `yield from` do, and why is it useful when composing
+    generators?
 
-   **Answer:** `yield from` hands control to another iterable or generator so you don't have to write the loop manually. It's mainly about cleaner composition when one generator is just forwarding values from another.
+    **Answer:** `yield from` hands control to another iterable or generator so you don't have to write the loop manually. It's mainly about cleaner composition when one generator is just forwarding values from another.
 
-   ```python
-   from collections.abc import Iterator
+    ```python
+    from collections.abc import Iterator
 
-   def child() -> Iterator[int]:
+    def child() -> Iterator[int]:
        yield from [1, 2]
-   ```
+    ```
 
-5. Can you iterate a generator twice? What happens if you try?
+- Can you iterate a generator twice? What happens if you try?
 
-   **Answer:** No — a generator is single-use. Once it's exhausted, iterating it again gives you nothing unless you create a fresh generator object.
+    **Answer:** No — a generator is single-use. Once it's exhausted, iterating it again gives you nothing unless you create a fresh generator object.
 
-   ```python
-   gen = (n for n in range(2))
-   print(list(gen))  # [0, 1]
-   print(list(gen))  # []
-   ```
+    ```python
+    gen = (n for n in range(2))
+    print(list(gen))  # [0, 1]
+    print(list(gen))  # []
+    ```
 
-6. What's the difference between `next(gen)` and `gen.send(value)`?
+- What's the difference between `next(gen)` and `gen.send(value)`?
 
-   **Answer:** `next(gen)` just resumes the generator and asks for the next yielded value. `send(value)` also resumes it, but injects a value back into the paused `yield` expression.
+    **Answer:** `next(gen)` just resumes the generator and asks for the next yielded value. `send(value)` also resumes it, but injects a value back into the paused `yield` expression.
 
-   ```python
-   from collections.abc import Iterator
+    ```python
+    from collections.abc import Iterator
 
-   def echo() -> Iterator[int]:
+    def echo() -> Iterator[int]:
        received = yield 0
        yield received
-   ```
+    ```
 
 ## Senior-level considerations
 

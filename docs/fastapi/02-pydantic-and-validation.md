@@ -179,50 +179,50 @@ applying examples from documentation or tutorials.
 
 ## Interview questions
 
-1. Why does FastAPI need Pydantic even though Python already has type
-   hints?
+- Why does FastAPI need Pydantic even though Python already has type
+    hints?
 
-   **Answer:** Type hints describe intent, but they don't stop bad input at
-   runtime. Pydantic is the layer that actually parses external data,
-   validates it, and gives FastAPI a consistent error shape.
+    **Answer:** Type hints describe intent, but they don't stop bad input at
+    runtime. Pydantic is the layer that actually parses external data,
+    validates it, and gives FastAPI a consistent error shape.
 
-   ```python
-   from pydantic import BaseModel
-   
-   class UserCreate(BaseModel):
+    ```python
+    from pydantic import BaseModel
+    
+    class UserCreate(BaseModel):
        age: int
-   ```
+    ```
 
-2. What's the difference between using the same model for requests and
-   responses vs separate `UserCreate`/`UserOut` models?
+- What's the difference between using the same model for requests and
+    responses vs separate `UserCreate`/`UserOut` models?
 
-   **Answer:** One shared model is fine only when the fields are truly the
-   same both ways. In real services, separate models are safer because input
-   and output usually have different concerns, especially around sensitive
-   or server-generated fields.
+    **Answer:** One shared model is fine only when the fields are truly the
+    same both ways. In real services, separate models are safer because input
+    and output usually have different concerns, especially around sensitive
+    or server-generated fields.
 
-   ```python
-   from pydantic import BaseModel
+    ```python
+    from pydantic import BaseModel
 
-   class UserCreate(BaseModel):
+    class UserCreate(BaseModel):
        name: str
 
-   class UserOut(BaseModel):
+    class UserOut(BaseModel):
        id: int
        name: str
-   ```
+    ```
 
-3. How would you validate that two fields (e.g. password and confirmation)
-   match each other?
+- How would you validate that two fields (e.g. password and confirmation)
+    match each other?
 
-   **Answer:** Use a model-level validator because the rule depends on more
-   than one field. That's the right place for cross-field checks like
-   password confirmation or date range validation.
+    **Answer:** Use a model-level validator because the rule depends on more
+    than one field. That's the right place for cross-field checks like
+    password confirmation or date range validation.
 
-   ```python
-   from pydantic import BaseModel, model_validator
-   
-   class PasswordReset(BaseModel):
+    ```python
+    from pydantic import BaseModel, model_validator
+    
+    class PasswordReset(BaseModel):
        password: str
        confirm_password: str
 
@@ -231,36 +231,36 @@ applying examples from documentation or tutorials.
            if self.password != self.confirm_password:
                raise ValueError("passwords do not match")
            return self
-   ```
+    ```
 
-4. What does `response_model` actually do at runtime, beyond documentation?
+- What does `response_model` actually do at runtime, beyond documentation?
 
-   **Answer:** It validates and filters the outgoing data before FastAPI
-   sends the response. That means extra fields from ORM objects or internal
-   models do not automatically leak into the public API.
+    **Answer:** It validates and filters the outgoing data before FastAPI
+    sends the response. That means extra fields from ORM objects or internal
+    models do not automatically leak into the public API.
 
-   ```python
-   from fastapi import FastAPI
-   from pydantic import BaseModel
+    ```python
+    from fastapi import FastAPI
+    from pydantic import BaseModel
 
-   app = FastAPI()
+    app = FastAPI()
 
-   class UserOut(BaseModel):
+    class UserOut(BaseModel):
        id: int
        name: str
 
-   @app.get("/users/{user_id}", response_model=UserOut)
-   def get_user(user_id: int) -> UserOut:
+    @app.get("/users/{user_id}", response_model=UserOut)
+    def get_user(user_id: int) -> UserOut:
        return {"id": user_id, "name": "Roy", "hashed_password": "secret"}
-   ```
+    ```
 
-5. What changed between Pydantic v1 and v2 that you should be aware of
-   when reading older FastAPI code?
+- What changed between Pydantic v1 and v2 that you should be aware of
+    when reading older FastAPI code?
 
-   **Answer:** The validator APIs changed (`@validator` became
-   `@field_validator`, `@root_validator` became `@model_validator`), and v2
-   has a much faster core. If you copy snippets across versions without
-   checking, you'll often get broken validation code.
+    **Answer:** The validator APIs changed (`@validator` became
+    `@field_validator`, `@root_validator` became `@model_validator`), and v2
+    has a much faster core. If you copy snippets across versions without
+    checking, you'll often get broken validation code.
 
 ## Senior-level considerations
 

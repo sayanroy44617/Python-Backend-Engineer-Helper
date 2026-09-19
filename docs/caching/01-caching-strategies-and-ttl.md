@@ -159,46 +159,46 @@ Poor fit:  data that must always be perfectly consistent (real-time
 
 ## Interview questions
 
-1. Walk through cache-aside end to end: what happens on a cache hit, a
-   cache miss, and a cache outage?
+- Walk through cache-aside end to end: what happens on a cache hit, a
+    cache miss, and a cache outage?
 
-   **Answer:** Hit: read straight from cache, done. Miss: read from the
-   DB, write the result into the cache, return it. Outage: the app just
-   falls back to reading from the DB directly every time — slower, but
-   still correct, since the cache was never the source of truth.
+    **Answer:** Hit: read straight from cache, done. Miss: read from the
+    DB, write the result into the cache, return it. Outage: the app just
+    falls back to reading from the DB directly every time — slower, but
+    still correct, since the cache was never the source of truth.
 
-2. Compare write-through and write-behind — what does each trade off?
+- Compare write-through and write-behind — what does each trade off?
 
-   **Answer:** Write-through writes to the cache and the DB synchronously
-   on every write — simple and consistent, but every write pays the cost
-   of both. Write-behind writes to the cache immediately and flushes to
-   the DB asynchronously later — faster writes, but risks losing data if
-   the cache crashes before the flush happens.
+    **Answer:** Write-through writes to the cache and the DB synchronously
+    on every write — simple and consistent, but every write pays the cost
+    of both. Write-behind writes to the cache immediately and flushes to
+    the DB asynchronously later — faster writes, but risks losing data if
+    the cache crashes before the flush happens.
 
-3. Why does a TTL matter even on data you also invalidate explicitly on
-   writes?
+- Why does a TTL matter even on data you also invalidate explicitly on
+    writes?
 
-   **Answer:** Explicit invalidation only works if every write path
-   remembers to trigger it — miss one code path, a bug, or a direct DB
-   write, and the cache silently goes stale forever. A TTL is a safety
-   net that guarantees staleness has a hard ceiling regardless of bugs.
+    **Answer:** Explicit invalidation only works if every write path
+    remembers to trigger it — miss one code path, a bug, or a direct DB
+    write, and the cache silently goes stale forever. A TTL is a safety
+    net that guarantees staleness has a hard ceiling regardless of bugs.
 
-4. What's the difference between LRU and LFU eviction, and when would you
-   prefer one over the other?
+- What's the difference between LRU and LFU eviction, and when would you
+    prefer one over the other?
 
-   **Answer:** LRU evicts the item not accessed for the longest time —
-   good default, adapts naturally to recency. LFU evicts the
-   least-frequently accessed item — better when some items are accessed
-   rarely but consistently over time and shouldn't get evicted just
-   because of a temporary lull.
+    **Answer:** LRU evicts the item not accessed for the longest time —
+    good default, adapts naturally to recency. LFU evicts the
+    least-frequently accessed item — better when some items are accessed
+    rarely but consistently over time and shouldn't get evicted just
+    because of a temporary lull.
 
-5. What characteristics make a piece of data a good vs. poor candidate
-   for caching?
+- What characteristics make a piece of data a good vs. poor candidate
+    for caching?
 
-   **Answer:** Good: read often, expensive to compute/fetch, and tolerant
-   of some staleness (e.g. a product catalog page). Poor: changes
-   constantly, read rarely, or needs to be always perfectly fresh (e.g. a
-   real-time account balance mid-transaction).
+    **Answer:** Good: read often, expensive to compute/fetch, and tolerant
+    of some staleness (e.g. a product catalog page). Poor: changes
+    constantly, read rarely, or needs to be always perfectly fresh (e.g. a
+    real-time account balance mid-transaction).
 
 ## Senior-level considerations
 

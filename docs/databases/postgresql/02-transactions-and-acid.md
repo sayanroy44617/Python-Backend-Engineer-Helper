@@ -161,45 +161,45 @@ for how it maps onto the ORM session lifecycle.
 
 ## Interview questions
 
-1. What do the four ACID properties each guarantee?
+- What do the four ACID properties each guarantee?
 
-   **Answer:** Atomicity — a transaction's operations all happen or none
-   do. Consistency — a transaction only moves the DB between valid states
-   (constraints hold). Isolation — concurrent transactions don't see each
-   other's half-finished work. Durability — once committed, it survives a
-   crash/power loss.
+    **Answer:** Atomicity — a transaction's operations all happen or none
+    do. Consistency — a transaction only moves the DB between valid states
+    (constraints hold). Isolation — concurrent transactions don't see each
+    other's half-finished work. Durability — once committed, it survives a
+    crash/power loss.
 
-2. What's the difference between a dirty read, a non-repeatable read, and
-   a phantom read?
+- What's the difference between a dirty read, a non-repeatable read, and
+    a phantom read?
 
-   **Answer:** Dirty read = seeing another transaction's *uncommitted*
-   change. Non-repeatable read = re-reading the same row twice in one
-   transaction and getting different values because another transaction
-   committed a change in between. Phantom read = re-running the same
-   query twice and getting a different *set of rows* because rows were
-   inserted/deleted in between.
+    **Answer:** Dirty read = seeing another transaction's *uncommitted*
+    change. Non-repeatable read = re-reading the same row twice in one
+    transaction and getting different values because another transaction
+    committed a change in between. Phantom read = re-running the same
+    query twice and getting a different *set of rows* because rows were
+    inserted/deleted in between.
 
-3. What is PostgreSQL's default isolation level, and which anomalies does
-   it still allow?
+- What is PostgreSQL's default isolation level, and which anomalies does
+    it still allow?
 
-   **Answer:** `READ COMMITTED`. It prevents dirty reads but still
-   allows non-repeatable reads and phantom reads — each statement sees a
-   fresh snapshot, but two statements in the same transaction can see
-   different data.
+    **Answer:** `READ COMMITTED`. It prevents dirty reads but still
+    allows non-repeatable reads and phantom reads — each statement sees a
+    fresh snapshot, but two statements in the same transaction can see
+    different data.
 
-4. Why must application code be prepared to retry a transaction under
-   `SERIALIZABLE` isolation?
+- Why must application code be prepared to retry a transaction under
+    `SERIALIZABLE` isolation?
 
-   **Answer:** `SERIALIZABLE` gives the strongest guarantee by detecting
-   conflicts and aborting one of the conflicting transactions rather than
-   letting an anomaly happen — so the app has to catch that
-   serialization-failure error and retry the transaction from scratch.
+    **Answer:** `SERIALIZABLE` gives the strongest guarantee by detecting
+    conflicts and aborting one of the conflicting transactions rather than
+    letting an anomaly happen — so the app has to catch that
+    serialization-failure error and retry the transaction from scratch.
 
-5. Why should transactions be kept as short as possible?
+- Why should transactions be kept as short as possible?
 
-   **Answer:** A long transaction holds locks and an open connection the
-   whole time, blocking other transactions and tying up a pool slot — the
-   longer it runs, the more it drags down overall concurrency.
+    **Answer:** A long transaction holds locks and an open connection the
+    whole time, blocking other transactions and tying up a pool slot — the
+    longer it runs, the more it drags down overall concurrency.
 
 ## Senior-level considerations
 

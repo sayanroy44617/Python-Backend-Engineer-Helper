@@ -176,88 +176,88 @@ grows (see
 
 ## Interview questions
 
-1. How does FastAPI decide whether a parameter is a path parameter, query
-   parameter, or body?
+- How does FastAPI decide whether a parameter is a path parameter, query
+    parameter, or body?
 
-   **Answer:** If the name appears in the path template, it's a path
-   parameter. If the value is a Pydantic model, FastAPI reads it from the
-   body; otherwise it treats it as a query parameter unless you mark it
-   explicitly.
+    **Answer:** If the name appears in the path template, it's a path
+    parameter. If the value is a Pydantic model, FastAPI reads it from the
+    body; otherwise it treats it as a query parameter unless you mark it
+    explicitly.
 
-   ```python
-   from fastapi import FastAPI
-   from pydantic import BaseModel
+    ```python
+    from fastapi import FastAPI
+    from pydantic import BaseModel
 
-   app = FastAPI()
-   class UserCreate(BaseModel): name: str
+    app = FastAPI()
+    class UserCreate(BaseModel): name: str
 
-   @app.put("/users/{user_id}")
-   def update_user(user_id: int, payload: UserCreate, notify: bool = False) -> dict[str, object]:
+    @app.put("/users/{user_id}")
+    def update_user(user_id: int, payload: UserCreate, notify: bool = False) -> dict[str, object]:
        return {"user_id": user_id, "notify": notify, "name": payload.name}
-   ```
+    ```
 
-2. What's the difference between using a bare type hint with a default
-   value versus `Query(...)` for a query parameter?
+- What's the difference between using a bare type hint with a default
+    value versus `Query(...)` for a query parameter?
 
-   **Answer:** A plain default like `limit: int = 20` is enough for basic
-   optionality. `Query(...)` is what you use when you also want validation
-   rules or OpenAPI metadata such as bounds or descriptions.
+    **Answer:** A plain default like `limit: int = 20` is enough for basic
+    optionality. `Query(...)` is what you use when you also want validation
+    rules or OpenAPI metadata such as bounds or descriptions.
 
-   ```python
-   from fastapi import FastAPI, Query
+    ```python
+    from fastapi import FastAPI, Query
 
-   app = FastAPI()
+    app = FastAPI()
 
-   @app.get("/items")
-   def list_items(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, int]:
+    @app.get("/items")
+    def list_items(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, int]:
        return {"limit": limit}
-   ```
+    ```
 
-3. Why would you use an `APIRouter` instead of registering all routes
-   directly on `app`?
+- Why would you use an `APIRouter` instead of registering all routes
+    directly on `app`?
 
-   **Answer:** `APIRouter` keeps related endpoints together so the app stays
-   modular as it grows. It also makes shared prefixes, tags, and dependency
-   wiring much easier to manage.
+    **Answer:** `APIRouter` keeps related endpoints together so the app stays
+    modular as it grows. It also makes shared prefixes, tags, and dependency
+    wiring much easier to manage.
 
-   ```python
-   from fastapi import APIRouter
-   
-   router = APIRouter(prefix="/users", tags=["users"])
-   ```
+    ```python
+    from fastapi import APIRouter
+    
+    router = APIRouter(prefix="/users", tags=["users"])
+    ```
 
-4. What happens if a client sends a non-numeric value for a path parameter
-   typed as `int`?
+- What happens if a client sends a non-numeric value for a path parameter
+    typed as `int`?
 
-   **Answer:** FastAPI rejects it during request validation and returns a
-   `422` response before your handler runs. Your business logic never sees
-   the bad value.
+    **Answer:** FastAPI rejects it during request validation and returns a
+    `422` response before your handler runs. Your business logic never sees
+    the bad value.
 
-   ```python
-   from fastapi import FastAPI
+    ```python
+    from fastapi import FastAPI
 
-   app = FastAPI()
+    app = FastAPI()
 
-   @app.get("/users/{user_id}")
-   def get_user(user_id: int) -> dict[str, int]:
+    @app.get("/users/{user_id}")
+    def get_user(user_id: int) -> dict[str, int]:
        return {"id": user_id}
-   ```
+    ```
 
-5. How would you add pagination (`skip`/`limit`) to a list endpoint?
+- How would you add pagination (`skip`/`limit`) to a list endpoint?
 
-   **Answer:** Put `skip` and `limit` on the route as query parameters with
-   sensible defaults and bounds. Keep the names consistent across endpoints
-   so clients don't have to relearn pagination every time.
+    **Answer:** Put `skip` and `limit` on the route as query parameters with
+    sensible defaults and bounds. Keep the names consistent across endpoints
+    so clients don't have to relearn pagination every time.
 
-   ```python
-   from fastapi import FastAPI, Query
+    ```python
+    from fastapi import FastAPI, Query
 
-   app = FastAPI()
+    app = FastAPI()
 
-   @app.get("/items")
-   def list_items(skip: int = 0, limit: int = Query(default=20, le=100)) -> dict[str, int]:
+    @app.get("/items")
+    def list_items(skip: int = 0, limit: int = Query(default=20, le=100)) -> dict[str, int]:
        return {"skip": skip, "limit": limit}
-   ```
+    ```
 
 ## Senior-level considerations
 

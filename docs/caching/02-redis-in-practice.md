@@ -192,45 +192,45 @@ opening a new Redis connection per request.
 
 ## Interview questions
 
-1. Why is `INCR` safe under concurrent access while a manual "get, add
-   one, set" sequence in application code is not?
+- Why is `INCR` safe under concurrent access while a manual "get, add
+    one, set" sequence in application code is not?
 
-   **Answer:** `INCR` is a single atomic operation inside Redis — nothing
-   can interleave in the middle of it. "Get, add one, set" is three
-   separate round trips; two clients can both `GET` the same value before
-   either `SET`s, and one increment gets silently lost.
+    **Answer:** `INCR` is a single atomic operation inside Redis — nothing
+    can interleave in the middle of it. "Get, add one, set" is three
+    separate round trips; two clients can both `GET` the same value before
+    either `SET`s, and one increment gets silently lost.
 
-2. How would you implement a simple distributed lock with Redis, and why
-   does the TTL matter?
+- How would you implement a simple distributed lock with Redis, and why
+    does the TTL matter?
 
-   **Answer:** `SET lock_key unique_value NX EX 10` — `NX` only sets if
-   the key doesn't exist (so only one client "wins" the lock), and the
-   TTL (`EX`) guarantees the lock auto-releases even if the holder crashes
-   and never explicitly unlocks it.
+    **Answer:** `SET lock_key unique_value NX EX 10` — `NX` only sets if
+    the key doesn't exist (so only one client "wins" the lock), and the
+    TTL (`EX`) guarantees the lock auto-releases even if the holder crashes
+    and never explicitly unlocks it.
 
-3. What's the key durability difference between Redis pub/sub and a
-   message queue like Kafka or RabbitMQ?
+- What's the key durability difference between Redis pub/sub and a
+    message queue like Kafka or RabbitMQ?
 
-   **Answer:** Redis pub/sub is fire-and-forget — if no subscriber is
-   listening at that exact moment, the message is gone forever. A real
-   message queue persists messages so a consumer that connects late (or
-   reconnects after a crash) can still receive them.
+    **Answer:** Redis pub/sub is fire-and-forget — if no subscriber is
+    listening at that exact moment, the message is gone forever. A real
+    message queue persists messages so a consumer that connects late (or
+    reconnects after a crash) can still receive them.
 
-4. When would you choose a Redis hash over just storing a JSON-serialized
-   string for an object?
+- When would you choose a Redis hash over just storing a JSON-serialized
+    string for an object?
 
-   **Answer:** A hash lets you read/update individual fields
-   (`HGET`/`HSET`) without pulling and re-serializing the whole object —
-   use it when you frequently need partial reads/writes. A JSON string is
-   simpler when you always read/write the whole object together.
+    **Answer:** A hash lets you read/update individual fields
+    (`HGET`/`HSET`) without pulling and re-serializing the whole object —
+    use it when you frequently need partial reads/writes. A JSON string is
+    simpler when you always read/write the whole object together.
 
-5. Why should a Redis connection pool be created once at startup rather
-   than per request?
+- Why should a Redis connection pool be created once at startup rather
+    than per request?
 
-   **Answer:** Same reason as any connection pool — opening a new
-   TCP/Redis connection per request adds latency and overhead, and can
-   exhaust Redis's max client connections under load. Reuse one shared
-   pool created at startup instead.
+    **Answer:** Same reason as any connection pool — opening a new
+    TCP/Redis connection per request adds latency and overhead, and can
+    exhaust Redis's max client connections under load. Reuse one shared
+    pool created at startup instead.
 
 ## Senior-level considerations
 

@@ -272,136 +272,136 @@ funcs = [lambda i=i: i for i in range(3)]
 
 ## Interview questions
 
-1. What is the LEGB rule? Walk through an example with nested functions.
+- What is the LEGB rule? Walk through an example with nested functions.
 
-   **Answer:** Python resolves names in this order: Local, Enclosing, Global,
-   Built-in. In nested functions, an inner function sees its own variables
-   first, then the outer function's variables, then module-level names.
+    **Answer:** Python resolves names in this order: Local, Enclosing, Global,
+    Built-in. In nested functions, an inner function sees its own variables
+    first, then the outer function's variables, then module-level names.
 
-   ```python
-   x: str = "global"
-   def outer() -> str:
+    ```python
+    x: str = "global"
+    def outer() -> str:
        x: str = "enclosing"
        return x
-   ```
+    ```
 
-2. What's the difference between a list comprehension and a generator
-   expression? When does the difference matter?
+- What's the difference between a list comprehension and a generator
+    expression? When does the difference matter?
 
-   **Answer:** A list comprehension builds the whole list immediately; a
-   generator expression produces values lazily as you iterate. The difference
-   matters when the input is large or you only need one pass.
+    **Answer:** A list comprehension builds the whole list immediately; a
+    generator expression produces values lazily as you iterate. The difference
+    matters when the input is large or you only need one pass.
 
-   ```python
-   nums: list[int] = [n * n for n in range(3)]
-   total: int = sum(n * n for n in range(3))
-   ```
+    ```python
+    nums: list[int] = [n * n for n in range(3)]
+    total: int = sum(n * n for n in range(3))
+    ```
 
-3. Explain the late-binding closure bug with loop variables and how to fix
-   it.
+- Explain the late-binding closure bug with loop variables and how to fix
+    it.
 
-   **Answer:** Closures capture the variable, not the value at each iteration,
-   so every function can end up reading the loop variable's final value. Bind
-   the current value with a default argument or extract a helper function.
+    **Answer:** Closures capture the variable, not the value at each iteration,
+    so every function can end up reading the loop variable's final value. Bind
+    the current value with a default argument or extract a helper function.
 
-   ```python
-   funcs = [lambda i=i: i for i in range(3)]
-   print([fn() for fn in funcs])  # [0, 1, 2]
-   ```
+    ```python
+    funcs = [lambda i=i: i for i in range(3)]
+    print([fn() for fn in funcs])  # [0, 1, 2]
+    ```
 
-4. What happens if you mutate a variable from an enclosing scope without
-   `nonlocal`?
+- What happens if you mutate a variable from an enclosing scope without
+    `nonlocal`?
 
-   **Answer:** Python treats that assignment as creating a new local variable,
-   so reading it first usually triggers `UnboundLocalError`. `nonlocal` tells
-   Python you mean the variable from the enclosing function.
+    **Answer:** Python treats that assignment as creating a new local variable,
+    so reading it first usually triggers `UnboundLocalError`. `nonlocal` tells
+    Python you mean the variable from the enclosing function.
 
-   ```python
-   from collections.abc import Callable
+    ```python
+    from collections.abc import Callable
 
-   def counter() -> Callable[[], int]:
+    def counter() -> Callable[[], int]:
        count: int = 0
        def inc() -> int:
            nonlocal count
            count += 1
            return count
        return inc
-   ```
+    ```
 
-5. Why would you make an argument keyword-only?
+- Why would you make an argument keyword-only?
 
-   **Answer:** Keyword-only params make calls clearer and harder to misuse,
-   especially for booleans or optional behavior flags. They're also nicer for
-   API evolution because you can add them without breaking positional callers.
+    **Answer:** Keyword-only params make calls clearer and harder to misuse,
+    especially for booleans or optional behavior flags. They're also nicer for
+    API evolution because you can add them without breaking positional callers.
 
-   ```python
-   def fetch_user(user_id: int, *, include_deleted: bool = False) -> None:
+    ```python
+    def fetch_user(user_id: int, *, include_deleted: bool = False) -> None:
        pass
-   ```
+    ```
 
-6. How do `*args` and `**kwargs` work under the hood (tuple/dict packing)?
+- How do `*args` and `**kwargs` work under the hood (tuple/dict packing)?
 
-   **Answer:** Extra positional args are packed into a tuple, and extra keyword
-   args are packed into a dict. That makes them useful for wrappers and
-   decorators that need to forward arbitrary calls.
+    **Answer:** Extra positional args are packed into a tuple, and extra keyword
+    args are packed into a dict. That makes them useful for wrappers and
+    decorators that need to forward arbitrary calls.
 
-   ```python
-   def log_call(*args: object, **kwargs: object) -> tuple[tuple[object, ...], dict[str, object]]:
+    ```python
+    def log_call(*args: object, **kwargs: object) -> tuple[tuple[object, ...], dict[str, object]]:
        return args, kwargs
-   ```
+    ```
 
-7. What's the difference between `*args` in a function *definition* versus
-   `*some_list` at a *call site*?
+- What's the difference between `*args` in a function *definition* versus
+    `*some_list` at a *call site*?
 
-   **Answer:** In a definition, `*args` collects positional arguments into a
-   tuple. At a call site, `*some_list` unpacks an iterable into separate
-   positional arguments.
+    **Answer:** In a definition, `*args` collects positional arguments into a
+    tuple. At a call site, `*some_list` unpacks an iterable into separate
+    positional arguments.
 
-   ```python
-   def add(a: int, b: int) -> int:
+    ```python
+    def add(a: int, b: int) -> int:
        return a + b
-   values: list[int] = [2, 3]
-   print(add(*values))
-   ```
+    values: list[int] = [2, 3]
+    print(add(*values))
+    ```
 
-8. Why is `def f(x, timestamp=datetime.now())` a bug? How do you fix it?
+- Why is `def f(x, timestamp=datetime.now())` a bug? How do you fix it?
 
-   **Answer:** `datetime.now()` runs once when the function is defined, not on
-   every call, so later calls reuse the same timestamp. Use `None` and compute
-   the real default inside the function body.
+    **Answer:** `datetime.now()` runs once when the function is defined, not on
+    every call, so later calls reuse the same timestamp. Use `None` and compute
+    the real default inside the function body.
 
-   ```python
-   from datetime import datetime
+    ```python
+    from datetime import datetime
 
-   def stamp(ts: datetime | None = None) -> datetime:
+    def stamp(ts: datetime | None = None) -> datetime:
        return ts or datetime.now()
-   ```
+    ```
 
-9. What does `/` mean in a function signature, and where have you seen it
-   used in the standard library?
+- What does `/` mean in a function signature, and where have you seen it
+    used in the standard library?
 
-   **Answer:** `/` marks parameters before it as positional-only, so callers
-   cannot pass them by keyword. You see it in built-ins like `len(obj, /)` and
-   `divmod(a, b, /)`.
+    **Answer:** `/` marks parameters before it as positional-only, so callers
+    cannot pass them by keyword. You see it in built-ins like `len(obj, /)` and
+    `divmod(a, b, /)`.
 
-   ```python
-   def move(x: int, y: int, /) -> tuple[int, int]:
+    ```python
+    def move(x: int, y: int, /) -> tuple[int, int]:
        return x, y
-   ```
+    ```
 
-10. When would you reach for `functools.partial` instead of a `lambda`?
+- When would you reach for `functools.partial` instead of a `lambda`?
 
-   **Answer:** Use `partial` when you just want to pre-fill some arguments of
-   an existing callable and keep its behavior otherwise unchanged. It's clearer
-   than a tiny wrapper lambda for simple argument binding.
+    **Answer:** Use `partial` when you just want to pre-fill some arguments of
+    an existing callable and keep its behavior otherwise unchanged. It's clearer
+    than a tiny wrapper lambda for simple argument binding.
 
-   ```python
-   from functools import partial
+    ```python
+    from functools import partial
 
-   def add(a: int, b: int) -> int:
+    def add(a: int, b: int) -> int:
        return a + b
-   add_five = partial(add, 5)
-   ```
+    add_five = partial(add, 5)
+    ```
 
 ## Senior-level considerations
 

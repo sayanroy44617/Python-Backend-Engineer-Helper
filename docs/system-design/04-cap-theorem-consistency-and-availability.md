@@ -175,46 +175,46 @@ blanket consistency model everywhere.
 
 ## Interview questions
 
-1. Why is "choose 2 of 3" in CAP theorem a slightly misleading
-   simplification, and what's the more precise framing?
+- Why is "choose 2 of 3" in CAP theorem a slightly misleading
+    simplification, and what's the more precise framing?
 
-   **Answer:** In a real distributed system, partition tolerance is not really optional because networks do fail. So the real question is usually: during a partition, do you reject some requests to stay consistent, or do you keep serving and accept stale data?
+    **Answer:** In a real distributed system, partition tolerance is not really optional because networks do fail. So the real question is usually: during a partition, do you reject some requests to stay consistent, or do you keep serving and accept stale data?
 
-2. Give an example of a real backend component that leans CP, and one
-   that leans AP.
+- Give an example of a real backend component that leans CP, and one
+    that leans AP.
 
-   **Answer:** A PostgreSQL setup with synchronous replication leans CP because it may block or reject writes if replicas cannot confirm. A cache or CDN leans AP because it will usually keep serving slightly stale data instead of failing every read.
+    **Answer:** A PostgreSQL setup with synchronous replication leans CP because it may block or reject writes if replicas cannot confirm. A cache or CDN leans AP because it will usually keep serving slightly stale data instead of failing every read.
 
-   ```python
-   write_path = "primary + sync replica ack"   # CP-leaning
-   read_path = "serve cached response"         # AP-leaning
-   ```
+    ```python
+    write_path = "primary + sync replica ack"   # CP-leaning
+    read_path = "serve cached response"         # AP-leaning
+    ```
 
-3. What's the difference between strong consistency and eventual
-   consistency, and what does each cost?
+- What's the difference between strong consistency and eventual
+    consistency, and what does each cost?
 
-   **Answer:** Strong consistency means once a write succeeds, every later read sees it. Eventual consistency means replicas may be briefly behind, which improves availability and scale, but your app has to tolerate temporary stale reads.
+    **Answer:** Strong consistency means once a write succeeds, every later read sees it. Eventual consistency means replicas may be briefly behind, which improves availability and scale, but your app has to tolerate temporary stale reads.
 
-4. Why might different operations within the same system need different
-   consistency guarantees?
+- Why might different operations within the same system need different
+    consistency guarantees?
 
-   **Answer:** Because the business risk is different per operation. Money movement or inventory reservation usually needs fresh, correct data right now, while feed counts or recommendations can often be slightly stale without hurting the user.
+    **Answer:** Because the business risk is different per operation. Money movement or inventory reservation usually needs fresh, correct data right now, while feed counts or recommendations can often be slightly stale without hurting the user.
 
-   ```python
-   if operation in {"transfer_money", "reserve_stock"}:
+    ```python
+    if operation in {"transfer_money", "reserve_stock"}:
        require_strong_consistency = True
-   ```
+    ```
 
-5. How does replication lag relate to the CAP theorem trade-off, even
-   without an actual network partition occurring?
+- How does replication lag relate to the CAP theorem trade-off, even
+    without an actual network partition occurring?
 
-   **Answer:** Replication lag is the everyday version of the same trade-off: you keep reads fast and available from replicas, but sometimes they are behind the primary. So even without a hard partition, you're still choosing some availability and scale over perfectly fresh reads.
+    **Answer:** Replication lag is the everyday version of the same trade-off: you keep reads fast and available from replicas, but sometimes they are behind the primary. So even without a hard partition, you're still choosing some availability and scale over perfectly fresh reads.
 
-   ```sql
-   -- write goes to primary
-   UPDATE orders SET status = 'paid' WHERE id = 42;
-   -- immediate read from replica may still show 'pending'
-   ```
+    ```sql
+    -- write goes to primary
+    UPDATE orders SET status = 'paid' WHERE id = 42;
+    -- immediate read from replica may still show 'pending'
+    ```
 
 ## Senior-level considerations
 

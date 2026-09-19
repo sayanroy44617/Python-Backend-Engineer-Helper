@@ -151,47 +151,47 @@ everything at the API boundary starts here.
 
 ## Interview questions
 
-1. Compare fixed window, sliding window, and token bucket rate limiting.
-   What's the practical weakness of fixed window?
+- Compare fixed window, sliding window, and token bucket rate limiting.
+    What's the practical weakness of fixed window?
 
-   **Answer:** Fixed window counts requests in a hard-boundary window
-   (e.g. 100/minute) and resets at the boundary — its weakness is a burst
-   right at the edge (99 requests at 0:59, 99 more at 1:00) can double the
-   effective rate. Sliding window smooths that by looking at a rolling
-   time range. Token bucket adds tokens at a steady rate and lets requests
-   spend them, allowing controlled bursts without the edge problem.
+    **Answer:** Fixed window counts requests in a hard-boundary window
+    (e.g. 100/minute) and resets at the boundary — its weakness is a burst
+    right at the edge (99 requests at 0:59, 99 more at 1:00) can double the
+    effective rate. Sliding window smooths that by looking at a rolling
+    time range. Token bucket adds tokens at a steady rate and lets requests
+    spend them, allowing controlled bursts without the edge problem.
 
-2. Why is IP-based rate limiting often insufficient for authenticated
-   APIs?
+- Why is IP-based rate limiting often insufficient for authenticated
+    APIs?
 
-   **Answer:** Many real users can share one IP (corporate NAT, mobile
-   carrier), so IP limiting either blocks innocent users together or is
-   trivially bypassed by an attacker rotating IPs. Limiting by
-   authenticated user/API key ties the limit to the actual identity.
+    **Answer:** Many real users can share one IP (corporate NAT, mobile
+    carrier), so IP limiting either blocks innocent users together or is
+    trivially bypassed by an attacker rotating IPs. Limiting by
+    authenticated user/API key ties the limit to the actual identity.
 
-3. Why doesn't an in-memory rate limit counter work correctly once an API
-   runs on multiple instances behind a load balancer?
+- Why doesn't an in-memory rate limit counter work correctly once an API
+    runs on multiple instances behind a load balancer?
 
-   **Answer:** Each instance keeps its own separate counter in memory, so
-   a client hitting 3 instances round-robin effectively gets 3x the
-   intended limit. You need a shared store (Redis) all instances check
-   against.
+    **Answer:** Each instance keeps its own separate counter in memory, so
+    a client hitting 3 instances round-robin effectively gets 3x the
+    intended limit. You need a shared store (Redis) all instances check
+    against.
 
-4. What status code and headers should a rate-limited response include,
-   and why?
+- What status code and headers should a rate-limited response include,
+    and why?
 
-   **Answer:** `429 Too Many Requests`, plus a `Retry-After` header
-   telling the client how long to wait before trying again — so
-   well-behaved clients back off instead of hammering the API immediately.
+    **Answer:** `429 Too Many Requests`, plus a `Retry-After` header
+    telling the client how long to wait before trying again — so
+    well-behaved clients back off instead of hammering the API immediately.
 
-5. Why is strict input validation itself considered a security control,
-   not just a correctness one?
+- Why is strict input validation itself considered a security control,
+    not just a correctness one?
 
-   **Answer:** Most injection/overflow/DoS-style attacks start with
-   unexpected input (oversized payloads, malformed types, unexpected
-   characters) — rejecting anything that doesn't match the expected shape
-   closes off a huge class of attacks before your business logic even
-   runs.
+    **Answer:** Most injection/overflow/DoS-style attacks start with
+    unexpected input (oversized payloads, malformed types, unexpected
+    characters) — rejecting anything that doesn't match the expected shape
+    closes off a huge class of attacks before your business logic even
+    runs.
 
 ## Senior-level considerations
 

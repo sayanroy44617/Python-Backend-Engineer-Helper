@@ -167,51 +167,51 @@ primary.
 
 ## Interview questions
 
-1. What's your diagnostic order when told "the database is slow" for a
-   specific endpoint?
+- What's your diagnostic order when told "the database is slow" for a
+    specific endpoint?
 
-   **Answer:** Start broad and narrow down: check if it's actually the DB
-   (vs. waiting on a connection pool slot), look at slow query logs /
-   `EXPLAIN ANALYZE` for the specific query, check for lock contention,
-   then consider caching or a read replica if the query itself is already
-   optimal.
+    **Answer:** Start broad and narrow down: check if it's actually the DB
+    (vs. waiting on a connection pool slot), look at slow query logs /
+    `EXPLAIN ANALYZE` for the specific query, check for lock contention,
+    then consider caching or a read replica if the query itself is already
+    optimal.
 
-2. How do you distinguish a genuinely slow query from a request that's
-   just waiting for a connection pool slot?
+- How do you distinguish a genuinely slow query from a request that's
+    just waiting for a connection pool slot?
 
-   **Answer:** Check the query's own execution time via `EXPLAIN ANALYZE`
-   or query logs — if that's fast but the request as a whole is slow,
-   time is being spent waiting to *acquire* a connection from the pool,
-   not executing SQL. Pool wait-time metrics (if instrumented) confirm
-   this directly.
+    **Answer:** Check the query's own execution time via `EXPLAIN ANALYZE`
+    or query logs — if that's fast but the request as a whole is slow,
+    time is being spent waiting to *acquire* a connection from the pool,
+    not executing SQL. Pool wait-time metrics (if instrumented) confirm
+    this directly.
 
-3. Why might a query that runs fast in isolation be slow under real
-   production load? What would you check?
+- Why might a query that runs fast in isolation be slow under real
+    production load? What would you check?
 
-   **Answer:** In isolation there's no contention — under load, the same
-   query can be blocked by locks from other transactions, competing for
-   CPU/disk I/O with everything else, or waiting for a pool connection.
-   Check lock waits, concurrent transaction volume, and pool saturation,
-   not just the query plan alone.
+    **Answer:** In isolation there's no contention — under load, the same
+    query can be blocked by locks from other transactions, competing for
+    CPU/disk I/O with everything else, or waiting for a pool connection.
+    Check lock waits, concurrent transaction volume, and pool saturation,
+    not just the query plan alone.
 
-4. When would caching be the right fix for a database performance
-   problem, and when would it just be masking an underlying N+1 or
-   missing-index issue?
+- When would caching be the right fix for a database performance
+    problem, and when would it just be masking an underlying N+1 or
+    missing-index issue?
 
-   **Answer:** Caching is right when the underlying query is already
-   efficient but simply run too often for the same, rarely-changing data.
-   It's masking a real problem if the query itself is inefficient (N+1,
-   missing index) — caching just hides the slowness for cached requests
-   while the first request (and any cache miss) still pays the full,
-   unfixed cost.
+    **Answer:** Caching is right when the underlying query is already
+    efficient but simply run too often for the same, rarely-changing data.
+    It's masking a real problem if the query itself is inefficient (N+1,
+    missing index) — caching just hides the slowness for cached requests
+    while the first request (and any cache miss) still pays the full,
+    unfixed cost.
 
-5. What's the trade-off introduced by adding a read replica for a
-   read-heavy workload?
+- What's the trade-off introduced by adding a read replica for a
+    read-heavy workload?
 
-   **Answer:** You gain read throughput by spreading reads across
-   replicas, but you introduce replication lag — a replica can serve
-   slightly stale data, so anything requiring strict read-your-writes
-   consistency needs to explicitly read from the primary instead.
+    **Answer:** You gain read throughput by spreading reads across
+    replicas, but you introduce replication lag — a replica can serve
+    slightly stale data, so anything requiring strict read-your-writes
+    consistency needs to explicitly read from the primary instead.
 
 ## Senior-level considerations
 

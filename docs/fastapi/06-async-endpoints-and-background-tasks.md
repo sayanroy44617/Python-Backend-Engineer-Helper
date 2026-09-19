@@ -149,61 +149,61 @@ connections under load and defeats the purpose of pooling entirely.
 
 ## Interview questions
 
-1. What's the practical difference between `async def` and `def` route
-   handlers in FastAPI?
+- What's the practical difference between `async def` and `def` route
+    handlers in FastAPI?
 
-   **Answer:** `async def` runs on the event loop, so it only helps when the work inside is actually non-blocking. Plain `def` runs in FastAPI's thread pool, which is usually the safer choice for sync libraries.
+    **Answer:** `async def` runs on the event loop, so it only helps when the work inside is actually non-blocking. Plain `def` runs in FastAPI's thread pool, which is usually the safer choice for sync libraries.
 
-   ```python
-   async def fetch_user() -> dict[str, int]:
+    ```python
+    async def fetch_user() -> dict[str, int]:
        return {"id": 1}
 
-   def parse_report() -> dict[str, bool]:
+    def parse_report() -> dict[str, bool]:
        return {"ok": True}
-   ```
+    ```
 
-2. Why would a blocking call inside `async def` be worse than the same
-   call inside plain `def`?
+- Why would a blocking call inside `async def` be worse than the same
+    call inside plain `def`?
 
-   **Answer:** In `async def`, a blocking call freezes the event loop, so unrelated requests get stuck too. In plain `def`, FastAPI isolates that blocking work in a worker thread instead of choking the loop.
+    **Answer:** In `async def`, a blocking call freezes the event loop, so unrelated requests get stuck too. In plain `def`, FastAPI isolates that blocking work in a worker thread instead of choking the loop.
 
-   ```python
-   import time
+    ```python
+    import time
 
-   async def bad_endpoint() -> dict[str, bool]:
+    async def bad_endpoint() -> dict[str, bool]:
        time.sleep(1)
        return {"ok": True}
-   ```
+    ```
 
-3. What is `BackgroundTasks` appropriate for, and where does it fall short
-   compared to a real task queue?
+- What is `BackgroundTasks` appropriate for, and where does it fall short
+    compared to a real task queue?
 
-   **Answer:** It's fine for quick follow-up work that is okay to lose, like sending a non-critical email or writing a best-effort audit line. It falls short when you need retries, persistence, scheduling, or work to survive a process crash.
+    **Answer:** It's fine for quick follow-up work that is okay to lose, like sending a non-critical email or writing a best-effort audit line. It falls short when you need retries, persistence, scheduling, or work to survive a process crash.
 
-   ```python
-   from fastapi import BackgroundTasks
+    ```python
+    from fastapi import BackgroundTasks
 
-   def enqueue_email(background_tasks: BackgroundTasks, email: str) -> None:
+    def enqueue_email(background_tasks: BackgroundTasks, email: str) -> None:
        background_tasks.add_task(print, f"send welcome email to {email}")
-   ```
+    ```
 
-4. Why should a DB connection pool be created in `lifespan` rather than
-   inside each request handler?
+- Why should a DB connection pool be created in `lifespan` rather than
+    inside each request handler?
 
-   **Answer:** A pool is meant to be long-lived and shared; creating one per request defeats pooling and can burn through database connections fast. `lifespan` gives you one setup point at startup and one cleanup point at shutdown.
+    **Answer:** A pool is meant to be long-lived and shared; creating one per request defeats pooling and can burn through database connections fast. `lifespan` gives you one setup point at startup and one cleanup point at shutdown.
 
-5. What replaced `@app.on_event("startup")`, and what problem did that
-   change solve?
+- What replaced `@app.on_event("startup")`, and what problem did that
+    change solve?
 
-   **Answer:** The `lifespan` async context manager replaced it. It puts startup and shutdown logic in one explicit place, which makes resource setup and cleanup easier to reason about together.
+    **Answer:** The `lifespan` async context manager replaced it. It puts startup and shutdown logic in one explicit place, which makes resource setup and cleanup easier to reason about together.
 
-   ```python
-   from contextlib import asynccontextmanager
+    ```python
+    from contextlib import asynccontextmanager
 
-   @asynccontextmanager
-   async def lifespan(app):
+    @asynccontextmanager
+    async def lifespan(app):
        yield
-   ```
+    ```
 
 ## Senior-level considerations
 

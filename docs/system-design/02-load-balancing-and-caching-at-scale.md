@@ -170,61 +170,61 @@ removes the need for this workaround entirely.
 
 ## Interview questions
 
-1. What's the difference between Layer 4 and Layer 7 load balancing, and
-   when does the distinction matter?
+- What's the difference between Layer 4 and Layer 7 load balancing, and
+    when does the distinction matter?
 
-   **Answer:** Layer 4 routes using network details like IP and port,
-   while Layer 7 understands HTTP details like path, host, and headers.
-   The distinction matters when you need smart routing such as sending
-   `/api` and `/admin` to different backends or doing header-based canary
-   releases.
+    **Answer:** Layer 4 routes using network details like IP and port,
+    while Layer 7 understands HTTP details like path, host, and headers.
+    The distinction matters when you need smart routing such as sending
+    `/api` and `/admin` to different backends or doing header-based canary
+    releases.
 
-   ```yaml
-   rules:
+    ```yaml
+    rules:
      - host: api.example.com
        http:
          paths:
            - path: /admin
-   ```
+    ```
 
-2. How do health checks change a load balancer's routing behavior, and
-   why does this matter during a partial outage?
+- How do health checks change a load balancer's routing behavior, and
+    why does this matter during a partial outage?
 
-   **Answer:** Health checks let the load balancer stop sending traffic to
-   bad instances instead of blindly treating all instances as healthy.
-   During a partial outage, that means one broken pod does not keep
-   failing user requests while healthy pods are still available.
+    **Answer:** Health checks let the load balancer stop sending traffic to
+    bad instances instead of blindly treating all instances as healthy.
+    During a partial outage, that means one broken pod does not keep
+    failing user requests while healthy pods are still available.
 
-3. Why are sticky sessions considered a workaround rather than a real
-   fix for a stateful service?
+- Why are sticky sessions considered a workaround rather than a real
+    fix for a stateful service?
 
-   **Answer:** They hide the statefulness problem instead of removing it.
-   If the pinned instance dies or gets overloaded, the user's in-memory
-   state is lost and load distribution becomes uneven.
+    **Answer:** They hide the statefulness problem instead of removing it.
+    If the pinned instance dies or gets overloaded, the user's in-memory
+    state is lost and load distribution becomes uneven.
 
-4. Why is caching often a bigger lever for system capacity than adding
-   more service instances?
+- Why is caching often a bigger lever for system capacity than adding
+    more service instances?
 
-   **Answer:** A cache removes work entirely, especially expensive
-   database reads, while more app instances mostly spread the same work
-   around. If 80% of requests become cache hits, the database and app
-   both do far less work.
+    **Answer:** A cache removes work entirely, especially expensive
+    database reads, while more app instances mostly spread the same work
+    around. If 80% of requests become cache hits, the database and app
+    both do far less work.
 
-   ```python
-   value = redis.get(cache_key)
-   if value is not None:
+    ```python
+    value = redis.get(cache_key)
+    if value is not None:
        return json.loads(value)
-   result = load_from_db()
-   redis.setex(cache_key, 60, json.dumps(result))
-   ```
+    result = load_from_db()
+    redis.setex(cache_key, 60, json.dumps(result))
+    ```
 
-5. How would you decide what to cache in a system with a mix of
-   read-heavy and write-heavy workloads?
+- How would you decide what to cache in a system with a mix of
+    read-heavy and write-heavy workloads?
 
-   **Answer:** Start with data that is read a lot, expensive to compute,
-   and safe to be slightly stale for a short time. Avoid or be very
-   careful with fast-changing write-heavy data unless you have a clear
-   invalidation story and know stale reads are acceptable.
+    **Answer:** Start with data that is read a lot, expensive to compute,
+    and safe to be slightly stale for a short time. Avoid or be very
+    careful with fast-changing write-heavy data unless you have a clear
+    invalidation story and know stale reads are acceptable.
 
 ## Senior-level considerations
 

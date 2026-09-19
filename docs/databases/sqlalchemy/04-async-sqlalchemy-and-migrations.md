@@ -193,44 +193,44 @@ single giant `UPDATE` can lock a large table for an extended period (see
 
 ## Interview questions
 
-1. Why does synchronous SQLAlchemy inside an `async def` FastAPI route
-   defeat the purpose of using `async def` at all?
+- Why does synchronous SQLAlchemy inside an `async def` FastAPI route
+    defeat the purpose of using `async def` at all?
 
-   **Answer:** Sync SQLAlchemy calls block the single event-loop thread
-   while waiting on the database, so every other coroutine (other
-   requests) also has to wait — you've paid for `async def` syntax but
-   lost the concurrency benefit it's supposed to give you.
+    **Answer:** Sync SQLAlchemy calls block the single event-loop thread
+    while waiting on the database, so every other coroutine (other
+    requests) also has to wait — you've paid for `async def` syntax but
+    lost the concurrency benefit it's supposed to give you.
 
-2. What driver-level requirement does async SQLAlchemy have that sync
-   SQLAlchemy doesn't?
+- What driver-level requirement does async SQLAlchemy have that sync
+    SQLAlchemy doesn't?
 
-   **Answer:** It needs an async-capable DBAPI driver (e.g. `asyncpg` for
-   Postgres instead of `psycopg2`), because the driver itself has to
-   support non-blocking I/O for `await` to actually yield control.
+    **Answer:** It needs an async-capable DBAPI driver (e.g. `asyncpg` for
+    Postgres instead of `psycopg2`), because the driver itself has to
+    support non-blocking I/O for `await` to actually yield control.
 
-3. Why should you always eager-load relationships in async code rather
-   than relying on lazy loading?
+- Why should you always eager-load relationships in async code rather
+    than relying on lazy loading?
 
-   **Answer:** Lazy loading normally issues a fresh sync-style query the
-   moment you touch the attribute — that doesn't work safely in an async
-   context without extra plumbing, so you eager-load
-   (`selectinload`/`joinedload`) upfront in the original async query
-   instead.
+    **Answer:** Lazy loading normally issues a fresh sync-style query the
+    moment you touch the attribute — that doesn't work safely in an async
+    context without extra plumbing, so you eager-load
+    (`selectinload`/`joinedload`) upfront in the original async query
+    instead.
 
-4. What does `alembic revision --autogenerate` actually do, and why does
-   its output still need manual review?
+- What does `alembic revision --autogenerate` actually do, and why does
+    its output still need manual review?
 
-   **Answer:** It diffs your current models against what Alembic thinks
-   the DB schema looks like, and generates a migration script for the
-   difference. It can miss things (renames look like drop+add, some type
-   changes aren't detected) or capture unrelated diffs — you have to read
-   and fix the generated file before trusting it.
+    **Answer:** It diffs your current models against what Alembic thinks
+    the DB schema looks like, and generates a migration script for the
+    difference. It can miss things (renames look like drop+add, some type
+    changes aren't detected) or capture unrelated diffs — you have to read
+    and fix the generated file before trusting it.
 
-5. Why does every migration need both `upgrade()` and `downgrade()`?
+- Why does every migration need both `upgrade()` and `downgrade()`?
 
-   **Answer:** `upgrade()` applies the change; `downgrade()` is how you
-   safely revert it if the deploy needs to be rolled back — without it,
-   a bad migration can't be undone cleanly in production.
+    **Answer:** `upgrade()` applies the change; `downgrade()` is how you
+    safely revert it if the deploy needs to be rolled back — without it,
+    a bad migration can't be undone cleanly in production.
 
 ## Senior-level considerations
 

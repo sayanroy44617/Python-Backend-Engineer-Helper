@@ -173,64 +173,64 @@ integrations issued limited-scope tokens.
 
 ## Interview questions
 
-1. What's the difference between authentication and authorization? Give a
-   401 vs 403 example.
+- What's the difference between authentication and authorization? Give a
+    401 vs 403 example.
 
-   **Answer:** Authentication is "who are you?"; authorization is "are you allowed to do this?". Return `401` when the token is missing or bad, and `403` when the token is valid but the user still lacks the required permission.
+    **Answer:** Authentication is "who are you?"; authorization is "are you allowed to do this?". Return `401` when the token is missing or bad, and `403` when the token is valid but the user still lacks the required permission.
 
-   ```python
-   from fastapi import HTTPException
+    ```python
+    from fastapi import HTTPException
 
-   def require_admin(is_authenticated: bool, is_admin: bool) -> None:
+    def require_admin(is_authenticated: bool, is_admin: bool) -> None:
        if not is_authenticated:
            raise HTTPException(status_code=401, detail="Missing token")
        if not is_admin:
            raise HTTPException(status_code=403, detail="Admin role required")
-   ```
+    ```
 
-2. What does `OAuth2PasswordBearer` actually do, and what does it *not* do?
+- What does `OAuth2PasswordBearer` actually do, and what does it *not* do?
 
-   **Answer:** It pulls the bearer token out of the `Authorization` header and marks the route as secured in OpenAPI. It does not verify signature, expiry, issuer, or load the user for you.
+    **Answer:** It pulls the bearer token out of the `Authorization` header and marks the route as secured in OpenAPI. It does not verify signature, expiry, issuer, or load the user for you.
 
-   ```python
-   from fastapi import Depends
-   from fastapi.security import OAuth2PasswordBearer
+    ```python
+    from fastapi import Depends
+    from fastapi.security import OAuth2PasswordBearer
 
-   oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-   def read_token(token: str = Depends(oauth2_scheme)) -> dict[str, str]:
+    def read_token(token: str = Depends(oauth2_scheme)) -> dict[str, str]:
        return {"token": token}
-   ```
+    ```
 
-3. How would you implement a reusable "require this role" check across
-   many routes?
+- How would you implement a reusable "require this role" check across
+    many routes?
 
-   **Answer:** Use a dependency factory so the route declares the required role in one place and the check stays centralized. That keeps the route signature readable and avoids copy-pasting the same `if role not in user.roles` block everywhere.
+    **Answer:** Use a dependency factory so the route declares the required role in one place and the check stays centralized. That keeps the route signature readable and avoids copy-pasting the same `if role not in user.roles` block everywhere.
 
-   ```python
-   from fastapi import Depends, HTTPException
+    ```python
+    from fastapi import Depends, HTTPException
 
-   def require_role(role: str):
+    def require_role(role: str):
        def dependency(user_roles: set[str] = Depends(lambda: {"admin"})) -> None:
            if role not in user_roles:
                raise HTTPException(status_code=403, detail="Forbidden")
        return dependency
-   ```
+    ```
 
-4. Why should token validation happen in a dependency rather than inline
-   in every route?
+- Why should token validation happen in a dependency rather than inline
+    in every route?
 
-   **Answer:** Because auth is cross-cutting plumbing, not route-specific business logic. A dependency gives you one place to validate tokens, load the user, and apply the same behavior consistently across every protected endpoint.
+    **Answer:** Because auth is cross-cutting plumbing, not route-specific business logic. A dependency gives you one place to validate tokens, load the user, and apply the same behavior consistently across every protected endpoint.
 
-5. What are OAuth2 scopes, and when would you use them over simple role
-   checks?
+- What are OAuth2 scopes, and when would you use them over simple role
+    checks?
 
-   **Answer:** Scopes are narrower permissions carried by the token itself, like `users:read` or `reports:write`. Use them when one identity should get different limited tokens for different clients or integrations instead of one broad role.
+    **Answer:** Scopes are narrower permissions carried by the token itself, like `users:read` or `reports:write`. Use them when one identity should get different limited tokens for different clients or integrations instead of one broad role.
 
-   ```python
-   def can_read_users(scopes: list[str]) -> bool:
+    ```python
+    def can_read_users(scopes: list[str]) -> bool:
        return "users:read" in scopes
-   ```
+    ```
 
 ## Senior-level considerations
 

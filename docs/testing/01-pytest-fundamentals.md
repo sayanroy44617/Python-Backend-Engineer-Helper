@@ -182,51 +182,51 @@ iteration, running them only in CI).
 
 ## Interview questions
 
-1. What's the practical difference between pytest's fixtures and
-   `unittest`'s `setUp`/`tearDown`?
+- What's the practical difference between pytest's fixtures and
+    `unittest`'s `setUp`/`tearDown`?
 
-   **Answer:** `setUp`/`tearDown` run for every test in a class,
-   unconditionally. Fixtures are opt-in per test (only tests that request
-   them get them), composable (a fixture can depend on other fixtures),
-   and reusable across files via `conftest.py` — much more flexible for
-   sharing setup selectively.
+    **Answer:** `setUp`/`tearDown` run for every test in a class,
+    unconditionally. Fixtures are opt-in per test (only tests that request
+    them get them), composable (a fixture can depend on other fixtures),
+    and reusable across files via `conftest.py` — much more flexible for
+    sharing setup selectively.
 
-2. What does fixture `scope` control, and what's the trade-off between
-   `function` and `session` scope?
+- What does fixture `scope` control, and what's the trade-off between
+    `function` and `session` scope?
 
-   **Answer:** `scope` controls how often the fixture is recreated —
-   `function` (default) creates it fresh per test (safest, fully
-   isolated, slower); `session` creates it once for the whole test run
-   (fast, but tests can leak state into each other if the fixture is
-   mutable).
+    **Answer:** `scope` controls how often the fixture is recreated —
+    `function` (default) creates it fresh per test (safest, fully
+    isolated, slower); `session` creates it once for the whole test run
+    (fast, but tests can leak state into each other if the fixture is
+    mutable).
 
-3. How does `conftest.py` make fixtures available without an import?
+- How does `conftest.py` make fixtures available without an import?
 
-   **Answer:** pytest automatically discovers `conftest.py` files in the
-   test directory tree and registers any fixtures defined there for every
-   test file in that directory (and subdirectories) — no explicit import
-   needed, it's just pytest's plugin/collection mechanism.
+    **Answer:** pytest automatically discovers `conftest.py` files in the
+    test directory tree and registers any fixtures defined there for every
+    test file in that directory (and subdirectories) — no explicit import
+    needed, it's just pytest's plugin/collection mechanism.
 
-4. What does `@pytest.mark.parametrize` do, and why is it preferable to
-   writing separate near-duplicate test functions?
+- What does `@pytest.mark.parametrize` do, and why is it preferable to
+    writing separate near-duplicate test functions?
 
-   **Answer:** It runs the same test body once per set of input values you
-   provide, showing each as a separate test result. It's preferable
-   because you write the assertion logic once instead of copy-pasting
-   near-identical test functions for each input case.
+    **Answer:** It runs the same test body once per set of input values you
+    provide, showing each as a separate test result. It's preferable
+    because you write the assertion logic once instead of copy-pasting
+    near-identical test functions for each input case.
 
-   ```python
-   @pytest.mark.parametrize("value,expected", [(1, 2), (2, 4), (3, 6)])
-   def test_double(value: int, expected: int) -> None:
+    ```python
+    @pytest.mark.parametrize("value,expected", [(1, 2), (2, 4), (3, 6)])
+    def test_double(value: int, expected: int) -> None:
        assert double(value) == expected
-   ```
+    ```
 
-5. What happens to a fixture's teardown code if the test itself raises
-   an exception?
+- What happens to a fixture's teardown code if the test itself raises
+    an exception?
 
-   **Answer:** Teardown (code after `yield` in a fixture) still runs —
-   pytest guarantees cleanup happens whether the test passes, fails, or
-   errors, similar to a `finally` block.
+    **Answer:** Teardown (code after `yield` in a fixture) still runs —
+    pytest guarantees cleanup happens whether the test passes, fails, or
+    errors, similar to a `finally` block.
 
 ## Senior-level considerations
 

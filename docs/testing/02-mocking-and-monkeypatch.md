@@ -182,51 +182,51 @@ happened without changing the actual behavior.
 
 ## Interview questions
 
-1. What's the difference between `Mock` and `MagicMock`?
+- What's the difference between `Mock` and `MagicMock`?
 
-   **Answer:** Both auto-create attributes/methods on access, but
-   `MagicMock` additionally implements Python's dunder methods (`__len__`,
-   `__iter__`, `__enter__`, etc.), so it can stand in for objects used in
-   `len(x)`, `for i in x`, or `with x:`. Plain `Mock` doesn't support
-   those out of the box.
+    **Answer:** Both auto-create attributes/methods on access, but
+    `MagicMock` additionally implements Python's dunder methods (`__len__`,
+    `__iter__`, `__enter__`, etc.), so it can stand in for objects used in
+    `len(x)`, `for i in x`, or `with x:`. Plain `Mock` doesn't support
+    those out of the box.
 
-2. Why must you patch a dependency where it's *used*, not where it's
-   *defined*? Walk through why the "wrong" patch target silently fails.
+- Why must you patch a dependency where it's *used*, not where it's
+    *defined*? Walk through why the "wrong" patch target silently fails.
 
-   **Answer:** `from module import func; func()` binds `func` as a name
-   in *your* module's namespace at import time. Patching `module.func`
-   afterward doesn't touch that already-bound local name — you have to
-   patch `your_module.func` (where it's looked up at call time) for the
-   replacement to actually take effect.
+    **Answer:** `from module import func; func()` binds `func` as a name
+    in *your* module's namespace at import time. Patching `module.func`
+    afterward doesn't touch that already-bound local name — you have to
+    patch `your_module.func` (where it's looked up at call time) for the
+    replacement to actually take effect.
 
-3. What's the practical difference between `unittest.mock.patch` and
-   pytest's `monkeypatch`?
+- What's the practical difference between `unittest.mock.patch` and
+    pytest's `monkeypatch`?
 
-   **Answer:** They do similar things (temporarily replace an
-   attribute/function), but `monkeypatch` is a pytest fixture with
-   automatic, guaranteed teardown at the end of the test, while
-   `mock.patch` is typically used as a decorator/context manager you
-   apply yourself. `monkeypatch` also conveniently handles env vars and
-   dict items, not just attributes.
+    **Answer:** They do similar things (temporarily replace an
+    attribute/function), but `monkeypatch` is a pytest fixture with
+    automatic, guaranteed teardown at the end of the test, while
+    `mock.patch` is typically used as a decorator/context manager you
+    apply yourself. `monkeypatch` also conveniently handles env vars and
+    dict items, not just attributes.
 
-4. When would you use `side_effect` instead of `return_value`?
+- When would you use `side_effect` instead of `return_value`?
 
-   **Answer:** `return_value` always returns the same fixed value.
-   `side_effect` lets you return different values on successive calls, or
-   raise an exception, or run custom logic — use it when the mock's
-   behavior needs to vary or simulate a failure.
+    **Answer:** `return_value` always returns the same fixed value.
+    `side_effect` lets you return different values on successive calls, or
+    raise an exception, or run custom logic — use it when the mock's
+    behavior needs to vary or simulate a failure.
 
-   ```python
-   mock_call.side_effect = [1, 2, ValueError("boom")]
-   ```
+    ```python
+    mock_call.side_effect = [1, 2, ValueError("boom")]
+    ```
 
-5. How would you deterministically test code that depends on the current
-   time?
+- How would you deterministically test code that depends on the current
+    time?
 
-   **Answer:** Don't call `datetime.now()` directly inside the function —
-   inject the time (pass it as a parameter) or patch the time source in
-   the test, so the test controls exactly what "now" is instead of
-   depending on the real clock.
+    **Answer:** Don't call `datetime.now()` directly inside the function —
+    inject the time (pass it as a parameter) or patch the time source in
+    the test, so the test controls exactly what "now" is instead of
+    depending on the real clock.
 
 ## Senior-level considerations
 

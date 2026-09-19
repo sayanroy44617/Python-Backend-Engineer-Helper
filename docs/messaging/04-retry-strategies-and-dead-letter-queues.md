@@ -207,49 +207,49 @@ on what accumulates there.
 
 ## Interview questions
 
-1. Why is exponential backoff with jitter preferable to a fixed retry
-   delay?
+- Why is exponential backoff with jitter preferable to a fixed retry
+    delay?
 
-   **Answer:** A fixed delay means every failed consumer retries at
-   exactly the same intervals, creating synchronized retry storms that
-   hit the downstream service all at once. Exponential backoff spaces
-   retries further apart over time, and jitter (random variation) spreads
-   them out so they don't all land at the same instant.
+    **Answer:** A fixed delay means every failed consumer retries at
+    exactly the same intervals, creating synchronized retry storms that
+    hit the downstream service all at once. Exponential backoff spaces
+    retries further apart over time, and jitter (random variation) spreads
+    them out so they don't all land at the same instant.
 
-2. What's a "poison message," and how does a maximum retry count with DLQ
-   routing protect against it?
+- What's a "poison message," and how does a maximum retry count with DLQ
+    routing protect against it?
 
-   **Answer:** A poison message is one that will *never* process
-   successfully no matter how many times you retry (e.g. malformed data
-   that always throws). Without a retry cap, it gets retried forever,
-   blocking the queue behind it. A max retry count routes it to a dead
-   letter queue after N attempts, unblocking everything else.
+    **Answer:** A poison message is one that will *never* process
+    successfully no matter how many times you retry (e.g. malformed data
+    that always throws). Without a retry cap, it gets retried forever,
+    blocking the queue behind it. A max retry count routes it to a dead
+    letter queue after N attempts, unblocking everything else.
 
-3. How would you distinguish a retryable failure from a non-retryable one
-   in a message consumer, and why does that distinction matter?
+- How would you distinguish a retryable failure from a non-retryable one
+    in a message consumer, and why does that distinction matter?
 
-   **Answer:** Retryable = transient (network timeout, temporary 503,
-   deadlock) — likely to succeed if tried again. Non-retryable =
-   permanent (malformed payload, business rule violation) — retrying
-   changes nothing. Retrying a non-retryable failure just wastes time and
-   delays sending it to the DLQ where it can actually be investigated.
+    **Answer:** Retryable = transient (network timeout, temporary 503,
+    deadlock) — likely to succeed if tried again. Non-retryable =
+    permanent (malformed payload, business rule violation) — retrying
+    changes nothing. Retrying a non-retryable failure just wastes time and
+    delays sending it to the DLQ where it can actually be investigated.
 
-4. Compare how RabbitMQ's dead-letter-exchange and Kafka's DLQ convention
-   differ structurally.
+- Compare how RabbitMQ's dead-letter-exchange and Kafka's DLQ convention
+    differ structurally.
 
-   **Answer:** RabbitMQ has built-in dead-lettering — the broker itself
-   automatically routes rejected/expired messages to a configured
-   dead-letter exchange. Kafka has no built-in DLQ concept — it's just a
-   convention where your consumer code explicitly publishes the failed
-   message to a separate "dead letter" topic itself.
+    **Answer:** RabbitMQ has built-in dead-lettering — the broker itself
+    automatically routes rejected/expired messages to a configured
+    dead-letter exchange. Kafka has no built-in DLQ concept — it's just a
+    convention where your consumer code explicitly publishes the failed
+    message to a separate "dead letter" topic itself.
 
-5. Why does a DLQ need active monitoring to actually provide value?
+- Why does a DLQ need active monitoring to actually provide value?
 
-   **Answer:** A DLQ that nobody watches just becomes a silent graveyard
-   of failed messages — the failures still happened, they're just hidden
-   instead of crashing loudly. Monitoring/alerting on DLQ depth is what
-   turns it from "data loss you don't notice" into "a signal someone
-   investigates."
+    **Answer:** A DLQ that nobody watches just becomes a silent graveyard
+    of failed messages — the failures still happened, they're just hidden
+    instead of crashing loudly. Monitoring/alerting on DLQ depth is what
+    turns it from "data loss you don't notice" into "a signal someone
+    investigates."
 
 ## Senior-level considerations
 

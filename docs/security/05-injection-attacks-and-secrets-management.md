@@ -233,36 +233,36 @@ access and weaker access controls than the production database itself.
 
 ## Interview questions
 
-1. Walk through exactly why string-concatenated SQL is exploitable and
-   why a parameterized query fixes it at the driver level, not just by
-   convention.
+- Walk through exactly why string-concatenated SQL is exploitable and
+    why a parameterized query fixes it at the driver level, not just by
+    convention.
 
-   **Answer:** With string concatenation, attacker input becomes part of the SQL syntax, so quotes, operators, and comments can change the query's meaning. Parameterized queries fix this because the driver sends SQL structure separately from the value, so the database treats the input as data only.
+    **Answer:** With string concatenation, attacker input becomes part of the SQL syntax, so quotes, operators, and comments can change the query's meaning. Parameterized queries fix this because the driver sends SQL structure separately from the value, so the database treats the input as data only.
 
-2. Does using an ORM automatically prevent SQL injection? Explain the
-   caveat.
+- Does using an ORM automatically prevent SQL injection? Explain the
+    caveat.
 
-   **Answer:** Not automatically. ORM query builders are usually safe by default, but the moment you drop to raw SQL and interpolate input yourself, you have the same injection risk as plain DB driver code.
+    **Answer:** Not automatically. ORM query builders are usually safe by default, but the moment you drop to raw SQL and interpolate input yourself, you have the same injection risk as plain DB driver code.
 
-3. Why is deleting a committed secret in a later git commit insufficient
-   remediation?
+- Why is deleting a committed secret in a later git commit insufficient
+    remediation?
 
-   **Answer:** Because the secret still exists in git history, clones, CI logs, and anywhere else it was fetched or cached. The real fix is to rotate or revoke the secret, then clean up history if needed.
+    **Answer:** Because the secret still exists in git history, clones, CI logs, and anywhere else it was fetched or cached. The real fix is to rotate or revoke the secret, then clean up history if needed.
 
-4. What capabilities does a dedicated secrets manager provide over a
-   plain environment variable or `.env` file?
+- What capabilities does a dedicated secrets manager provide over a
+    plain environment variable or `.env` file?
 
-   **Answer:** A secrets manager gives you controlled access, audit logs, rotation workflows, and usually better integration with IAM. A `.env` file is just plaintext config on disk with none of that operational control.
+    **Answer:** A secrets manager gives you controlled access, audit logs, rotation workflows, and usually better integration with IAM. A `.env` file is just plaintext config on disk with none of that operational control.
 
-5. Why does rotating a signing key require a transition window accepting
-   both the old and new key?
+- Why does rotating a signing key require a transition window accepting
+    both the old and new key?
 
-   **Answer:** Because tokens signed before the rotation are still out in the wild and need to verify until they expire or are replaced. If you switch instantly to only the new key, you break every still-valid token at once.
+    **Answer:** Because tokens signed before the rotation are still out in the wild and need to verify until they expire or are replaced. If you switch instantly to only the new key, you break every still-valid token at once.
 
-   ```python
-   def active_keys() -> list[str]:
+    ```python
+    def active_keys() -> list[str]:
        return ["new-key", "old-key"]
-   ```
+    ```
 
 ## Senior-level considerations
 

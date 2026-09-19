@@ -163,55 +163,55 @@ objects.
 
 ## Interview questions
 
-1. What does `@dataclass` generate for you by default, and what does it
-   skip unless you ask for it (e.g. `__hash__`, ordering)?
+- What does `@dataclass` generate for you by default, and what does it
+    skip unless you ask for it (e.g. `__hash__`, ordering)?
 
-   **Answer:** By default it gives you things like `__init__`, `__repr__`, and `__eq__` based on fields. It does not automatically give you useful hashing for mutable objects or ordering methods unless you opt in.
+    **Answer:** By default it gives you things like `__init__`, `__repr__`, and `__eq__` based on fields. It does not automatically give you useful hashing for mutable objects or ordering methods unless you opt in.
 
-   ```python
-   from dataclasses import dataclass
+    ```python
+    from dataclasses import dataclass
 
-   @dataclass
-   class User:
+    @dataclass
+    class User:
        id: int
-   ```
+    ```
 
-2. Why does defining `__eq__` set `__hash__` to `None` unless you define it
-   explicitly?
+- Why does defining `__eq__` set `__hash__` to `None` unless you define it
+    explicitly?
 
-   **Answer:** Because if equality is value-based but hashing still uses object identity, sets and dicts break. Python disables hashing by default to avoid that inconsistent state.
+    **Answer:** Because if equality is value-based but hashing still uses object identity, sets and dicts break. Python disables hashing by default to avoid that inconsistent state.
 
-3. When would you use `@property` instead of a plain public attribute?
+- When would you use `@property` instead of a plain public attribute?
 
-   **Answer:** Use it when the attribute needs validation, lazy computation, or you want to keep attribute-style access while adding logic later. If it's just a plain field with no rules, a normal attribute is usually better.
+    **Answer:** Use it when the attribute needs validation, lazy computation, or you want to keep attribute-style access while adding logic later. If it's just a plain field with no rules, a normal attribute is usually better.
 
-   ```python
-   class Temperature:
+    ```python
+    class Temperature:
        @property
        def celsius(self) -> float:
            return 20.0
-   ```
+    ```
 
-4. What's the difference between `__str__` and `__repr__`?
+- What's the difference between `__str__` and `__repr__`?
 
-   **Answer:** `__repr__` is mainly for developers and debugging; it should be unambiguous. `__str__` is for cleaner user-facing display and can be more human-friendly.
+    **Answer:** `__repr__` is mainly for developers and debugging; it should be unambiguous. `__str__` is for cleaner user-facing display and can be more human-friendly.
 
-5. Why is `field(default_factory=list)` needed instead of `= []` in a
-   dataclass?
+- Why is `field(default_factory=list)` needed instead of `= []` in a
+    dataclass?
 
-   **Answer:** Because `[]` would be shared across instances, which creates the classic mutable-default bug. `default_factory=list` builds a fresh list for each new object.
+    **Answer:** Because `[]` would be shared across instances, which creates the classic mutable-default bug. `default_factory=list` builds a fresh list for each new object.
 
-   ```python
-   from dataclasses import dataclass, field
+    ```python
+    from dataclasses import dataclass, field
 
-   @dataclass
-   class User:
+    @dataclass
+    class User:
        tags: list[str] = field(default_factory=list)
-   ```
+    ```
 
-6. What does returning `NotImplemented` from `__eq__` accomplish?
+- What does returning `NotImplemented` from `__eq__` accomplish?
 
-   **Answer:** It tells Python "I don't know how to compare against this other type," so Python can try the reflected comparison or fall back cleanly. Returning `False` too early can give the wrong result for cross-type comparisons.
+    **Answer:** It tells Python "I don't know how to compare against this other type," so Python can try the reflected comparison or fall back cleanly. Returning `False` too early can give the wrong result for cross-type comparisons.
 
 ## Senior-level considerations
 

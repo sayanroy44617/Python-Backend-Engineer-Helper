@@ -170,45 +170,45 @@ non-idempotent operation (like charging a card) safe to retry.
 
 ## Interview questions
 
-1. What does it mean for an HTTP method to be idempotent? Which methods
-   are idempotent by default, and which aren't?
+- What does it mean for an HTTP method to be idempotent? Which methods
+    are idempotent by default, and which aren't?
 
-   **Answer:** Repeating the same request any number of times leaves the
-   resource in the same state as doing it once. `GET`, `PUT`, `DELETE` are
-   idempotent by default; `POST` and (usually) `PATCH` are not.
+    **Answer:** Repeating the same request any number of times leaves the
+    resource in the same state as doing it once. `GET`, `PUT`, `DELETE` are
+    idempotent by default; `POST` and (usually) `PATCH` are not.
 
-2. What's the practical difference between `PUT` and `PATCH`?
+- What's the practical difference between `PUT` and `PATCH`?
 
-   **Answer:** `PUT` replaces the entire resource with what you send —
-   omit a field and it's gone. `PATCH` applies a partial update — only the
-   fields you send change, the rest stay as they were.
+    **Answer:** `PUT` replaces the entire resource with what you send —
+    omit a field and it's gone. `PATCH` applies a partial update — only the
+    fields you send change, the rest stay as they were.
 
-   ```python
-   # PUT /users/1  {"name": "Ana"}       -> wipes out email if it existed
-   # PATCH /users/1 {"name": "Ana"}      -> only updates name
-   ```
+    ```python
+    # PUT /users/1  {"name": "Ana"}       -> wipes out email if it existed
+    # PATCH /users/1 {"name": "Ana"}      -> only updates name
+    ```
 
-3. Is `PATCH` always idempotent? Give an example where it isn't.
+- Is `PATCH` always idempotent? Give an example where it isn't.
 
-   **Answer:** No. `PATCH {"balance": balance + 10}` computed relative to
-   current state is not idempotent — applying it twice adds 20, not 10.
-   `PATCH {"status": "shipped"}` (an absolute value) is idempotent.
+    **Answer:** No. `PATCH {"balance": balance + 10}` computed relative to
+    current state is not idempotent — applying it twice adds 20, not 10.
+    `PATCH {"status": "shipped"}` (an absolute value) is idempotent.
 
-4. How would you make a `POST /payments` endpoint safe to retry without
-   double-charging a customer?
+- How would you make a `POST /payments` endpoint safe to retry without
+    double-charging a customer?
 
-   **Answer:** Require an idempotency key from the client (e.g. an
-   `Idempotency-Key` header). The server stores the first result keyed by
-   that value, and any retry with the same key just returns the original
-   result instead of charging again.
+    **Answer:** Require an idempotency key from the client (e.g. an
+    `Idempotency-Key` header). The server stores the first result keyed by
+    that value, and any retry with the same key just returns the original
+    result instead of charging again.
 
-5. Why does REST's statelessness constraint matter for horizontal
-   scaling?
+- Why does REST's statelessness constraint matter for horizontal
+    scaling?
 
-   **Answer:** If no server instance holds session state in memory, any
-   request can be routed to any instance behind a load balancer — you can
-   add/remove instances freely without needing "sticky sessions" or
-   shared in-memory state.
+    **Answer:** If no server instance holds session state in memory, any
+    request can be routed to any instance behind a load balancer — you can
+    add/remove instances freely without needing "sticky sessions" or
+    shared in-memory state.
 
 ## Senior-level considerations
 

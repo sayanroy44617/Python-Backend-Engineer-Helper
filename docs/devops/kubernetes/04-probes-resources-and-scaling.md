@@ -203,51 +203,51 @@ for when a new Pod is genuinely ready to receive traffic.
 
 ## Interview questions
 
-1. What's the practical difference in Kubernetes behavior between a
-   failing `livenessProbe` and a failing `readinessProbe`?
+- What's the practical difference in Kubernetes behavior between a
+    failing `livenessProbe` and a failing `readinessProbe`?
 
-   **Answer:** A failing liveness probe tells Kubernetes to restart the container because it thinks the app is broken. A failing readiness probe keeps the container running but removes that Pod from Service traffic until it becomes ready again.
+    **Answer:** A failing liveness probe tells Kubernetes to restart the container because it thinks the app is broken. A failing readiness probe keeps the container running but removes that Pod from Service traffic until it becomes ready again.
 
-   ```yaml
-   readinessProbe:
+    ```yaml
+    readinessProbe:
      httpGet:
        path: /health/ready
        port: 8000
-   ```
+    ```
 
-2. Why does `startupProbe` exist, and what problem does it solve that
-   tuning `livenessProbe` thresholds alone cannot?
+- Why does `startupProbe` exist, and what problem does it solve that
+    tuning `livenessProbe` thresholds alone cannot?
 
-   **Answer:** `startupProbe` protects slow-starting apps from being killed during boot. It gives Kubernetes a separate startup window, so you do not have to make the regular liveness check overly slow for the whole life of the container.
+    **Answer:** `startupProbe` protects slow-starting apps from being killed during boot. It gives Kubernetes a separate startup window, so you do not have to make the regular liveness check overly slow for the whole life of the container.
 
-   ```yaml
-   startupProbe:
+    ```yaml
+    startupProbe:
      httpGet:
        path: /health/live
        port: 8000
      failureThreshold: 30
-   ```
+    ```
 
-3. What's the difference between a container's resource `requests` and
-   `limits`, and what happens when each is exceeded?
+- What's the difference between a container's resource `requests` and
+    `limits`, and what happens when each is exceeded?
 
-   **Answer:** Requests are used for scheduling, so they tell Kubernetes how much CPU and memory the Pod needs reserved. Limits are the cap at runtime: going over a memory limit usually gets the container OOM-killed, while going over a CPU limit usually means throttling.
+    **Answer:** Requests are used for scheduling, so they tell Kubernetes how much CPU and memory the Pod needs reserved. Limits are the cap at runtime: going over a memory limit usually gets the container OOM-killed, while going over a CPU limit usually means throttling.
 
-4. Why must resource `requests` be set for CPU-based HPA scaling to work
-   correctly?
+- Why must resource `requests` be set for CPU-based HPA scaling to work
+    correctly?
 
-   **Answer:** CPU-based HPA usually works from utilization percentage, and that percentage is calculated against the CPU request. If requests are missing, the HPA does not have a solid baseline, so scaling decisions become invalid or unavailable.
+    **Answer:** CPU-based HPA usually works from utilization percentage, and that percentage is calculated against the CPU request. If requests are missing, the HPA does not have a solid baseline, so scaling decisions become invalid or unavailable.
 
-   ```yaml
-   resources:
+    ```yaml
+    resources:
      requests:
        cpu: "250m"
-   ```
+    ```
 
-5. Why does a readinessProbe matter for making a rolling update actually
-   zero-downtime?
+- Why does a readinessProbe matter for making a rolling update actually
+    zero-downtime?
 
-   **Answer:** During a rollout, Kubernetes should only send traffic to the new Pod after the app is actually ready. A readiness probe gives that signal, so users are less likely to hit a process that has started but still cannot serve real requests.
+    **Answer:** During a rollout, Kubernetes should only send traffic to the new Pod after the app is actually ready. A readiness probe gives that signal, so users are less likely to hit a process that has started but still cannot serve real requests.
 
 ## Senior-level considerations
 

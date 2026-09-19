@@ -190,47 +190,47 @@ messaging system second; a traditional queue is built around
 
 ## Interview questions
 
-1. What's the difference between a Kafka partition and a Kafka topic, and
-   why does ordering only apply within a partition?
+- What's the difference between a Kafka partition and a Kafka topic, and
+    why does ordering only apply within a partition?
 
-   **Answer:** A topic is the logical stream name; a partition is one
-   physical, ordered log that a topic is split into for parallelism.
-   Kafka only guarantees order within a single partition — across
-   partitions, messages can be processed in any relative order since
-   they're independent logs.
+    **Answer:** A topic is the logical stream name; a partition is one
+    physical, ordered log that a topic is split into for parallelism.
+    Kafka only guarantees order within a single partition — across
+    partitions, messages can be processed in any relative order since
+    they're independent logs.
 
-2. How does a Kafka consumer group provide both load balancing (within a
-   group) and independent parallel consumption (across groups)?
+- How does a Kafka consumer group provide both load balancing (within a
+    group) and independent parallel consumption (across groups)?
 
-   **Answer:** Within one consumer group, each partition is assigned to
-   only one consumer, so the group splits the work (load balancing). A
-   different consumer group reading the same topic gets its own full copy
-   of every message, independent of the first group — that's how two
-   different services can both process every event.
+    **Answer:** Within one consumer group, each partition is assigned to
+    only one consumer, so the group splits the work (load balancing). A
+    different consumer group reading the same topic gets its own full copy
+    of every message, independent of the first group — that's how two
+    different services can both process every event.
 
-3. Why does the partition count set a hard limit on consumer parallelism
-   within one consumer group?
+- Why does the partition count set a hard limit on consumer parallelism
+    within one consumer group?
 
-   **Answer:** A partition can only be actively read by one consumer per
-   group at a time — so with 4 partitions, adding a 5th consumer to that
-   group just leaves it idle. To increase parallelism you need more
-   partitions.
+    **Answer:** A partition can only be actively read by one consumer per
+    group at a time — so with 4 partitions, adding a 5th consumer to that
+    group just leaves it idle. To increase parallelism you need more
+    partitions.
 
-4. How does Kafka's retention-based storage model differ fundamentally
-   from a traditional message queue's delete-on-consume model?
+- How does Kafka's retention-based storage model differ fundamentally
+    from a traditional message queue's delete-on-consume model?
 
-   **Answer:** A traditional queue deletes a message once consumed —
-   it's gone. Kafka keeps messages on disk for a configured retention
-   period (or forever) regardless of consumption, so multiple consumers
-   can read the same message independently, and you can replay history.
+    **Answer:** A traditional queue deletes a message once consumed —
+    it's gone. Kafka keeps messages on disk for a configured retention
+    period (or forever) regardless of consumption, so multiple consumers
+    can read the same message independently, and you can replay history.
 
-5. How would you achieve ordering guarantees for a specific entity (e.g.
-   one customer's events) while still parallelizing across entities?
+- How would you achieve ordering guarantees for a specific entity (e.g.
+    one customer's events) while still parallelizing across entities?
 
-   **Answer:** Use the entity's ID (e.g. `customer_id`) as the partition
-   key — Kafka hashes it to always route that entity's messages to the
-   same partition, preserving order per-entity, while different entities
-   still spread across partitions for parallelism.
+    **Answer:** Use the entity's ID (e.g. `customer_id`) as the partition
+    key — Kafka hashes it to always route that entity's messages to the
+    same partition, preserving order per-entity, while different entities
+    still spread across partitions for parallelism.
 
 ## Senior-level considerations
 

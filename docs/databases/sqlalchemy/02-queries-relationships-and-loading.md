@@ -163,44 +163,44 @@ issues — the most direct way to catch an N+1 before it reaches production.
 
 ## Interview questions
 
-1. What causes the N+1 query problem in an ORM, and how would you detect
-   it in development?
+- What causes the N+1 query problem in an ORM, and how would you detect
+    it in development?
 
-   **Answer:** Fetching a list of parent rows, then accessing a
-   lazy-loaded relationship on each one in a loop, triggers a separate
-   query per parent (1 + N total). You can spot it by turning on SQL echo
-   logging (`echo=True`) or an APM query counter and watching the query
-   count explode relative to the number of rows.
+    **Answer:** Fetching a list of parent rows, then accessing a
+    lazy-loaded relationship on each one in a loop, triggers a separate
+    query per parent (1 + N total). You can spot it by turning on SQL echo
+    logging (`echo=True`) or an APM query counter and watching the query
+    count explode relative to the number of rows.
 
-2. What's the difference between `selectinload` and `joinedload`? When
-   would you choose one over the other?
+- What's the difference between `selectinload` and `joinedload`? When
+    would you choose one over the other?
 
-   **Answer:** `selectinload` runs a second, separate `SELECT ... WHERE
-   id IN (...)` to fetch related rows in bulk — no duplication, good
-   default for one-to-many. `joinedload` fetches everything in a single
-   `JOIN`ed query — one round trip, but duplicates parent columns per
-   child row, so it's better for one-to-one/many-to-one.
+    **Answer:** `selectinload` runs a second, separate `SELECT ... WHERE
+    id IN (...)` to fetch related rows in bulk — no duplication, good
+    default for one-to-many. `joinedload` fetches everything in a single
+    `JOIN`ed query — one round trip, but duplicates parent columns per
+    child row, so it's better for one-to-one/many-to-one.
 
-3. Why can `joinedload` cause row "fan-out" on a one-to-many relationship?
+- Why can `joinedload` cause row "fan-out" on a one-to-many relationship?
 
-   **Answer:** A `JOIN` produces one result row per matching child, so a
-   user with 5 orders comes back as 5 rows, each repeating the user's
-   columns — the same fan-out issue as a plain SQL join, just from the ORM.
+    **Answer:** A `JOIN` produces one result row per matching child, so a
+    user with 5 orders comes back as 5 rows, each repeating the user's
+    columns — the same fan-out issue as a plain SQL join, just from the ORM.
 
-4. What does `back_populates` do, and what happens if you forget it?
+- What does `back_populates` do, and what happens if you forget it?
 
-   **Answer:** It keeps both sides of a relationship in sync in Python
-   memory — appending a child updates the parent's collection and vice
-   versa. Forget it and the two sides can silently disagree until you
-   re-query from the DB.
+    **Answer:** It keeps both sides of a relationship in sync in Python
+    memory — appending a child updates the parent's collection and vice
+    versa. Forget it and the two sides can silently disagree until you
+    re-query from the DB.
 
-5. Why might you want a relationship's default loading strategy to differ
-   from what a specific query actually needs?
+- Why might you want a relationship's default loading strategy to differ
+    from what a specific query actually needs?
 
-   **Answer:** A relationship's default (set on the model) is a
-   reasonable general-purpose choice, but a specific query might need more
-   or less data — you override it per-query with `.options(selectinload
-   (...))` rather than changing the model-wide default for every caller.
+    **Answer:** A relationship's default (set on the model) is a
+    reasonable general-purpose choice, but a specific query might need more
+    or less data — you override it per-query with `.options(selectinload
+    (...))` rather than changing the model-wide default for every caller.
 
 ## Senior-level considerations
 

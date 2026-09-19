@@ -161,99 +161,99 @@ request (unless `use_cache=False` is passed to `Depends`).
 
 ## Interview questions
 
-1. How does FastAPI resolve a chain of nested dependencies?
+- How does FastAPI resolve a chain of nested dependencies?
 
-   **Answer:** It walks the dependency graph from the route signature,
-   resolves upstream dependencies first, then injects their results into the
-   downstream ones. FastAPI also caches each dependency result once per
-   request unless you turn that off.
+    **Answer:** It walks the dependency graph from the route signature,
+    resolves upstream dependencies first, then injects their results into the
+    downstream ones. FastAPI also caches each dependency result once per
+    request unless you turn that off.
 
-   ```python
-   from fastapi import Depends
+    ```python
+    from fastapi import Depends
 
-   def get_token() -> str:
+    def get_token() -> str:
        return "token"
 
-   def get_current_user(token: str = Depends(get_token)) -> str:
+    def get_current_user(token: str = Depends(get_token)) -> str:
        return token
-   ```
+    ```
 
-2. What does a `yield`-based dependency give you that a plain `return`-based
-   one doesn't?
+- What does a `yield`-based dependency give you that a plain `return`-based
+    one doesn't?
 
-   **Answer:** It gives you setup plus guaranteed teardown around the
-   request. That's what you want for things like DB sessions where cleanup
-   must happen even if the handler raises.
+    **Answer:** It gives you setup plus guaranteed teardown around the
+    request. That's what you want for things like DB sessions where cleanup
+    must happen even if the handler raises.
 
-   ```python
-   from collections.abc import Iterator
+    ```python
+    from collections.abc import Iterator
 
-   def get_db() -> Iterator[str]:
+    def get_db() -> Iterator[str]:
        try:
            yield "db-session"
        finally:
            print("closed")
-   ```
+    ```
 
-3. How would you swap a real database dependency for a test database in
-   your test suite?
+- How would you swap a real database dependency for a test database in
+    your test suite?
 
-   **Answer:** Override the dependency through `app.dependency_overrides`
-   so the routes keep the same contract but receive test infrastructure.
-   That's cleaner than mocking route internals.
+    **Answer:** Override the dependency through `app.dependency_overrides`
+    so the routes keep the same contract but receive test infrastructure.
+    That's cleaner than mocking route internals.
 
-   ```python
-   from fastapi import FastAPI
+    ```python
+    from fastapi import FastAPI
 
-   app = FastAPI()
+    app = FastAPI()
 
-   def get_db() -> str:
+    def get_db() -> str:
        return "prod"
 
-   def get_test_db() -> str:
+    def get_test_db() -> str:
        return "test"
 
-   app.dependency_overrides[get_db] = get_test_db
-   ```
+    app.dependency_overrides[get_db] = get_test_db
+    ```
 
-4. Is a dependency's result shared across multiple parts of the same
-   request that depend on it? Why does that matter?
+- Is a dependency's result shared across multiple parts of the same
+    request that depend on it? Why does that matter?
 
-   **Answer:** Yes, by default FastAPI caches it once per request. That
-   matters because you usually want one shared DB session or one resolved
-   current user, not duplicate work and inconsistent state.
+    **Answer:** Yes, by default FastAPI caches it once per request. That
+    matters because you usually want one shared DB session or one resolved
+    current user, not duplicate work and inconsistent state.
 
-   ```python
-   from fastapi import Depends, FastAPI
+    ```python
+    from fastapi import Depends, FastAPI
 
-   app = FastAPI()
+    app = FastAPI()
 
-   def get_settings() -> dict[str, str]:
+    def get_settings() -> dict[str, str]:
        return {"env": "dev"}
 
-   @app.get("/config")
-   def show_config(
+    @app.get("/config")
+    def show_config(
        a: dict[str, str] = Depends(get_settings),
        b: dict[str, str] = Depends(get_settings),
-   ) -> dict[str, bool]:
+    ) -> dict[str, bool]:
        return {"same_object": a is b}
-   ```
+    ```
 
-5. When would you attach a dependency at the router level instead of on
-   each individual route?
+- When would you attach a dependency at the router level instead of on
+    each individual route?
 
-   **Answer:** Use router-level dependencies when the same check or setup
-   applies to every endpoint in that area. Good examples are auth, API key
-   checks, tenant resolution, or audit context.
+    **Answer:** Use router-level dependencies when the same check or setup
+    applies to every endpoint in that area. Good examples are auth, API key
+    checks, tenant resolution, or audit context.
 
-   ```python
-   from fastapi import APIRouter, Depends
+    ```python
+    from fastapi import APIRouter, Depends
 
-   def verify_api_key() -> None:
+    def verify_api_key() -> None:
        return None
 
-   router = APIRouter(dependencies=[Depends(verify_api_key)])
-   ```
+    router = APIRouter(dependencies=[Depends(verify_api_key)])
+    ```
 
 ## Senior-level considerations
 

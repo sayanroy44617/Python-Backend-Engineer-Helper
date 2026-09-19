@@ -185,77 +185,77 @@ both.
 
 ## Interview questions
 
-1. What's the difference between a coroutine object and a task in
-   `asyncio`?
+- What's the difference between a coroutine object and a task in
+    `asyncio`?
 
-   **Answer:** A coroutine object is just the awaitable work definition;
-   nothing runs until you await it or schedule it. A task is a coroutine
-   that the event loop has already scheduled to make progress
-   concurrently.
+    **Answer:** A coroutine object is just the awaitable work definition;
+    nothing runs until you await it or schedule it. A task is a coroutine
+    that the event loop has already scheduled to make progress
+    concurrently.
 
-   ```python
-   import asyncio
+    ```python
+    import asyncio
 
-   async def work() -> int:
+    async def work() -> int:
        return 1
 
-   async def main() -> None:
+    async def main() -> None:
        coro = work()
        task = asyncio.create_task(work())
        await coro
        await task
 
-   asyncio.run(main())
-   ```
+    asyncio.run(main())
+    ```
 
-2. Why does calling a blocking function like `time.sleep()` inside an
-   `async def` function affect the entire application, not just the
-   current request?
+- Why does calling a blocking function like `time.sleep()` inside an
+    `async def` function affect the entire application, not just the
+    current request?
 
-   **Answer:** The event loop is usually one thread, so a blocking call
-   stops that one thread from running every other coroutine too. In a web
-   service, that means unrelated requests get stuck behind the bad call.
+    **Answer:** The event loop is usually one thread, so a blocking call
+    stops that one thread from running every other coroutine too. In a web
+    service, that means unrelated requests get stuck behind the bad call.
 
-3. When would you use `multiprocessing` instead of (or alongside)
-   `asyncio`?
+- When would you use `multiprocessing` instead of (or alongside)
+    `asyncio`?
 
-   **Answer:** Use it when the slow part is real CPU work and you need
-   multiple cores, like image transforms or big JSON/data crunching. A
-   common pattern is `asyncio` for network concurrency and a process pool
-   for the CPU-heavy step.
+    **Answer:** Use it when the slow part is real CPU work and you need
+    multiple cores, like image transforms or big JSON/data crunching. A
+    common pattern is `asyncio` for network concurrency and a process pool
+    for the CPU-heavy step.
 
-4. What does `asyncio.TaskGroup` provide over manually tracking tasks with
-   `create_task`?
+- What does `asyncio.TaskGroup` provide over manually tracking tasks with
+    `create_task`?
 
-   **Answer:** `TaskGroup` gives you structured concurrency: child tasks
-   are tracked, awaited, and cancelled together if one fails. It removes a
-   lot of the error-handling and cleanup footguns from ad hoc task
-   management.
+    **Answer:** `TaskGroup` gives you structured concurrency: child tasks
+    are tracked, awaited, and cancelled together if one fails. It removes a
+    lot of the error-handling and cleanup footguns from ad hoc task
+    management.
 
-5. How would you offload CPU-bound work from an async FastAPI handler
-   without blocking the event loop?
+- How would you offload CPU-bound work from an async FastAPI handler
+    without blocking the event loop?
 
-   **Answer:** Push it into a thread or process executor and `await` the
-   future from the loop, or hand it to a background worker if it does not
-   belong in the request path. The key point is: keep the event loop doing
-   I/O orchestration, not heavy computation.
+    **Answer:** Push it into a thread or process executor and `await` the
+    future from the loop, or hand it to a background worker if it does not
+    belong in the request path. The key point is: keep the event loop doing
+    I/O orchestration, not heavy computation.
 
-   ```python
-   import asyncio
+    ```python
+    import asyncio
 
-   async def main() -> None:
+    async def main() -> None:
        loop = asyncio.get_running_loop()
        result = await loop.run_in_executor(None, sum, [1, 2, 3])
        print(result)
 
-   asyncio.run(main())
-   ```
+    asyncio.run(main())
+    ```
 
-6. What's the "fire and forget" task bug, and how do you avoid it?
+- What's the "fire and forget" task bug, and how do you avoid it?
 
-   **Answer:** It's when code starts a task and never keeps track of it, so
-   failures, cancellation, or even task lifetime get lost. Avoid it by
-   awaiting tasks, storing references, or using `TaskGroup`.
+    **Answer:** It's when code starts a task and never keeps track of it, so
+    failures, cancellation, or even task lifetime get lost. Avoid it by
+    awaiting tasks, storing references, or using `TaskGroup`.
 
 ## Senior-level considerations
 

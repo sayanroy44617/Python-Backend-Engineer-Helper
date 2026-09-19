@@ -179,38 +179,38 @@ observability tooling for very different questions.
 
 ## Interview questions
 
-1. What's the difference between a Counter and a Gauge, and why can't a
-   Counter represent something like "current active connections"?
+- What's the difference between a Counter and a Gauge, and why can't a
+    Counter represent something like "current active connections"?
 
-   **Answer:** A Counter only goes up, apart from process restarts, so it's for totals like requests served or jobs completed. Active connections go up and down, so modeling them with a Counter gives you the wrong shape of data.
+    **Answer:** A Counter only goes up, apart from process restarts, so it's for totals like requests served or jobs completed. Active connections go up and down, so modeling them with a Counter gives you the wrong shape of data.
 
-   ```python
-   from prometheus_client import Gauge
+    ```python
+    from prometheus_client import Gauge
 
-   active_connections = Gauge("active_connections", "Current open connections")
-   active_connections.inc()
-   active_connections.dec()
-   ```
+    active_connections = Gauge("active_connections", "Current open connections")
+    active_connections.inc()
+    active_connections.dec()
+    ```
 
-2. Why does Prometheus use a pull model, and what's the practical
-   implication for how your application needs to be instrumented?
+- Why does Prometheus use a pull model, and what's the practical
+    implication for how your application needs to be instrumented?
 
-   **Answer:** With pull, your app just exposes current metric values and Prometheus comes and scrapes them on a schedule. In practice, that means your service needs a reachable `/metrics` endpoint instead of custom push logic for normal collection.
+    **Answer:** With pull, your app just exposes current metric values and Prometheus comes and scrapes them on a schedule. In practice, that means your service needs a reachable `/metrics` endpoint instead of custom push logic for normal collection.
 
-3. What is cardinality explosion, and how would a poorly chosen label
-   cause it?
+- What is cardinality explosion, and how would a poorly chosen label
+    cause it?
 
-   **Answer:** Cardinality explosion happens when one metric turns into too many unique time series because label values are unbounded. A label like `user_id` or raw URL can create a new series for every request and overwhelm Prometheus storage and query performance.
+    **Answer:** Cardinality explosion happens when one metric turns into too many unique time series because label values are unbounded. A label like `user_id` or raw URL can create a new series for every request and overwhelm Prometheus storage and query performance.
 
-4. Why do you almost always query `rate(counter[5m])` rather than a raw
-   counter value in PromQL?
+- Why do you almost always query `rate(counter[5m])` rather than a raw
+    counter value in PromQL?
 
-   **Answer:** A raw counter mostly tells you that time has passed and requests accumulated; it keeps increasing for the life of the process. `rate(...)` converts that cumulative number into something operationally useful, like requests per second over a recent window.
+    **Answer:** A raw counter mostly tells you that time has passed and requests accumulated; it keeps increasing for the life of the process. `rate(...)` converts that cumulative number into something operationally useful, like requests per second over a recent window.
 
-5. What do the RED and USE methods each focus on, and when would you use
-   each?
+- What do the RED and USE methods each focus on, and when would you use
+    each?
 
-   **Answer:** RED is for request-driven services and focuses on rate, errors, and duration, so it's a good default for APIs. USE is for resources like CPU, DB pools, or queues, where you care about utilization, saturation, and errors.
+    **Answer:** RED is for request-driven services and focuses on rate, errors, and duration, so it's a good default for APIs. USE is for resources like CPU, DB pools, or queues, where you care about utilization, saturation, and errors.
 
 ## Senior-level considerations
 

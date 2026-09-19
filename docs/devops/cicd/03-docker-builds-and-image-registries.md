@@ -174,53 +174,53 @@ environments.
 
 ## Interview questions
 
-1. Why is tagging images with `:latest` for production deployments
-   considered a mistake?
+- Why is tagging images with `:latest` for production deployments
+    considered a mistake?
 
-   **Answer:** `:latest` is mutable — it can point to a different image
-   tomorrow than it does today, so "redeploy the same version" or "roll
-   back" becomes ambiguous. You want an immutable tag (a commit SHA or
-   semantic version) that always refers to exactly one image.
+    **Answer:** `:latest` is mutable — it can point to a different image
+    tomorrow than it does today, so "redeploy the same version" or "roll
+    back" becomes ambiguous. You want an immutable tag (a commit SHA or
+    semantic version) that always refers to exactly one image.
 
-   ```bash
-   docker build -t my-api:1.4.0 .
-   docker build -t my-api:$(git rev-parse --short HEAD) .
-   ```
+    ```bash
+    docker build -t my-api:1.4.0 .
+    docker build -t my-api:$(git rev-parse --short HEAD) .
+    ```
 
-2. What does image scanning in a pipeline catch that source-level
-   dependency scanning might miss?
+- What does image scanning in a pipeline catch that source-level
+    dependency scanning might miss?
 
-   **Answer:** Image scanning checks the full built artifact — including the
-   base OS packages and anything installed at build time — not just your
-   application's declared dependencies, so it catches OS-level CVEs that
-   source scanning never sees.
+    **Answer:** Image scanning checks the full built artifact — including the
+    base OS packages and anything installed at build time — not just your
+    application's declared dependencies, so it catches OS-level CVEs that
+    source scanning never sees.
 
-3. Why would a team build multi-architecture images, and how is that
-   typically automated?
+- Why would a team build multi-architecture images, and how is that
+    typically automated?
 
-   **Answer:** Multi-arch images (amd64 + arm64) let the same image run on
-   different hardware — cheaper ARM cloud instances or Apple Silicon dev
-   machines — without maintaining separate builds. `docker buildx` automates
-   building and pushing a single manifest covering both architectures.
+    **Answer:** Multi-arch images (amd64 + arm64) let the same image run on
+    different hardware — cheaper ARM cloud instances or Apple Silicon dev
+    machines — without maintaining separate builds. `docker buildx` automates
+    building and pushing a single manifest covering both architectures.
 
-   ```bash
-   docker buildx build --platform linux/amd64,linux/arm64 -t my-api:1.4.0 --push .
-   ```
+    ```bash
+    docker buildx build --platform linux/amd64,linux/arm64 -t my-api:1.4.0 --push .
+    ```
 
-4. How does least privilege apply specifically to CI/CD pipeline
-   registry credentials?
+- How does least privilege apply specifically to CI/CD pipeline
+    registry credentials?
 
-   **Answer:** The pipeline's registry credential should only be able to
-   push to the specific repositories it needs, not admin-level access to the
-   whole registry — so a compromised pipeline can't overwrite or delete
-   unrelated images.
+    **Answer:** The pipeline's registry credential should only be able to
+    push to the specific repositories it needs, not admin-level access to the
+    whole registry — so a compromised pipeline can't overwrite or delete
+    unrelated images.
 
-5. What's the purpose of image signing (e.g. with Cosign) in a
-   supply-chain security context?
+- What's the purpose of image signing (e.g. with Cosign) in a
+    supply-chain security context?
 
-   **Answer:** Signing lets a cluster or deployment tool cryptographically
-   verify an image was actually built by your trusted pipeline and hasn't
-   been tampered with or swapped for a malicious one before deployment.
+    **Answer:** Signing lets a cluster or deployment tool cryptographically
+    verify an image was actually built by your trusted pipeline and hasn't
+    been tampered with or swapped for a malicious one before deployment.
 
 ## Senior-level considerations
 

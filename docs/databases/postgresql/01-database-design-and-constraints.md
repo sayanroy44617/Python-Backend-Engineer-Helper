@@ -169,50 +169,50 @@ performance — a deliberate choice for specific hot paths (e.g. avoiding a
 
 ## Interview questions
 
-1. Why are database-level constraints important even if the application
-   already validates the same rules?
+- Why are database-level constraints important even if the application
+    already validates the same rules?
 
-   **Answer:** Application validation can be bypassed — a bug, a script
-   run directly against the DB, another service writing to the same
-   table. A `NOT NULL`/`CHECK`/foreign key constraint is the last line of
-   defense that no code path can accidentally skip.
+    **Answer:** Application validation can be bypassed — a bug, a script
+    run directly against the DB, another service writing to the same
+    table. A `NOT NULL`/`CHECK`/foreign key constraint is the last line of
+    defense that no code path can accidentally skip.
 
-2. What's the difference between `ON DELETE CASCADE`, `RESTRICT`, and `SET
-   NULL`? When would you choose each?
+- What's the difference between `ON DELETE CASCADE`, `RESTRICT`, and `SET
+    NULL`? When would you choose each?
 
-   **Answer:** `CASCADE` deletes dependent rows automatically (e.g.
-   deleting a user deletes their orders) — use when the child truly can't
-   exist without the parent. `RESTRICT` blocks the delete if dependents
-   exist — use when accidental data loss is dangerous. `SET NULL` clears
-   the foreign key instead of deleting — use when the child should
-   survive as an "orphaned" record.
+    **Answer:** `CASCADE` deletes dependent rows automatically (e.g.
+    deleting a user deletes their orders) — use when the child truly can't
+    exist without the parent. `RESTRICT` blocks the delete if dependents
+    exist — use when accidental data loss is dangerous. `SET NULL` clears
+    the foreign key instead of deleting — use when the child should
+    survive as an "orphaned" record.
 
-3. What update anomaly does normalization prevent? Give a concrete
-   example.
+- What update anomaly does normalization prevent? Give a concrete
+    example.
 
-   **Answer:** Storing the same fact in multiple rows means updating it
-   in one place but not another leaves inconsistent data. E.g. storing a
-   customer's address on every order row means changing their address
-   requires updating every order — normalize it into a `customers` table
-   referenced by `customer_id` instead.
+    **Answer:** Storing the same fact in multiple rows means updating it
+    in one place but not another leaves inconsistent data. E.g. storing a
+    customer's address on every order row means changing their address
+    requires updating every order — normalize it into a `customers` table
+    referenced by `customer_id` instead.
 
-4. What are the trade-offs between an auto-increment integer primary key
-   and a UUID primary key?
+- What are the trade-offs between an auto-increment integer primary key
+    and a UUID primary key?
 
-   **Answer:** Integers are smaller, faster to index, and sort
-   insertion-order naturally, but they're guessable/sequential (leaks
-   volume, easy to enumerate) and awkward to generate client-side before
-   insert. UUIDs are unguessable and can be generated before hitting the
-   DB (useful for distributed systems), but they're larger and can
-   fragment index locality.
+    **Answer:** Integers are smaller, faster to index, and sort
+    insertion-order naturally, but they're guessable/sequential (leaks
+    volume, easy to enumerate) and awkward to generate client-side before
+    insert. UUIDs are unguessable and can be generated before hitting the
+    DB (useful for distributed systems), but they're larger and can
+    fragment index locality.
 
-5. When would deliberate denormalization be the right call, despite
-   normalization's benefits?
+- When would deliberate denormalization be the right call, despite
+    normalization's benefits?
 
-   **Answer:** When read performance on a hot path matters more than
-   write-time consistency risk — e.g. storing a `total_price` on an order
-   instead of recomputing it from line items on every read, accepting the
-   small risk of it drifting out of sync in exchange for speed.
+    **Answer:** When read performance on a hot path matters more than
+    write-time consistency risk — e.g. storing a `total_price` on an order
+    instead of recomputing it from line items on every read, accepting the
+    small risk of it drifting out of sync in exchange for speed.
 
 ## Senior-level considerations
 

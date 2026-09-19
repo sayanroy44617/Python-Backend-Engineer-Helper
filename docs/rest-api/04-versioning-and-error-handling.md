@@ -165,45 +165,45 @@ response), not a confusing new error.
 
 ## Interview questions
 
-1. What counts as a breaking API change, and what doesn't?
+- What counts as a breaking API change, and what doesn't?
 
-   **Answer:** Breaking = anything an existing client's code could choke
-   on: removing/renaming a field, changing a field's type, making an
-   optional field required, changing a status code. Non-breaking =
-   additive stuff, like adding a new optional field or a new endpoint,
-   that old clients simply ignore.
+    **Answer:** Breaking = anything an existing client's code could choke
+    on: removing/renaming a field, changing a field's type, making an
+    optional field required, changing a status code. Non-breaking =
+    additive stuff, like adding a new optional field or a new endpoint,
+    that old clients simply ignore.
 
-2. Compare URL path versioning, header versioning, and query parameter
-   versioning. Which would you choose for a public API, and why?
+- Compare URL path versioning, header versioning, and query parameter
+    versioning. Which would you choose for a public API, and why?
 
-   **Answer:** Path (`/v1/users`) is the most visible/discoverable and
-   easiest to route/cache; header (`Accept: application/vnd.api.v1+json`)
-   is "cleaner" REST-wise but harder to test/debug in a browser; query
-   param (`?version=1`) is the least common, easy to forget to send. For
-   a public API, path versioning is usually the pragmatic choice —
-   obvious to clients and trivial to route.
+    **Answer:** Path (`/v1/users`) is the most visible/discoverable and
+    easiest to route/cache; header (`Accept: application/vnd.api.v1+json`)
+    is "cleaner" REST-wise but harder to test/debug in a browser; query
+    param (`?version=1`) is the least common, easy to forget to send. For
+    a public API, path versioning is usually the pragmatic choice —
+    obvious to clients and trivial to route.
 
-3. Why should an error response include a machine-readable `code` in
-   addition to a human-readable `message`?
+- Why should an error response include a machine-readable `code` in
+    addition to a human-readable `message`?
 
-   **Answer:** Clients need to branch on errors programmatically (retry?
-   show a specific UI message? log and alert?). A stable `code` like
-   `"insufficient_funds"` is safe to `if`-check; a human `message` can
-   change wording anytime without breaking client logic.
+    **Answer:** Clients need to branch on errors programmatically (retry?
+    show a specific UI message? log and alert?). A stable `code` like
+    `"insufficient_funds"` is safe to `if`-check; a human `message` can
+    change wording anytime without breaking client logic.
 
-4. How would you communicate and enforce a deprecation timeline for an old
-   API version?
+- How would you communicate and enforce a deprecation timeline for an old
+    API version?
 
-   **Answer:** Announce it in docs/changelog with a firm sunset date,
-   return a `Deprecation`/`Sunset` header on old-version responses, and
-   monitor usage so you know when it's actually safe to remove.
+    **Answer:** Announce it in docs/changelog with a firm sunset date,
+    return a `Deprecation`/`Sunset` header on old-version responses, and
+    monitor usage so you know when it's actually safe to remove.
 
-5. Why is a consistent error response shape important across an entire
-   API surface?
+- Why is a consistent error response shape important across an entire
+    API surface?
 
-   **Answer:** If every endpoint's error looks different, client error
-   handling can't be written generically — one team has to write bespoke
-   parsing per endpoint instead of one shared error handler.
+    **Answer:** If every endpoint's error looks different, client error
+    handling can't be written generically — one team has to write bespoke
+    parsing per endpoint instead of one shared error handler.
 
 ## Senior-level considerations
 

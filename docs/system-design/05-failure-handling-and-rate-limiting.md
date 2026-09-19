@@ -199,43 +199,43 @@ independent of whether the dependency enforces its own limit.
 
 ## Interview questions
 
-1. Walk through how a cascading failure propagates through a chain of
-   services, and what specific techniques stop it at each stage.
+- Walk through how a cascading failure propagates through a chain of
+    services, and what specific techniques stop it at each stage.
 
-   **Answer:** One downstream service gets slow, callers wait too long, their worker threads or connection pools fill up, and then that slowness spreads upstream. You contain it with short timeouts, bounded retries with backoff, circuit breakers to fail fast, and bulkheads so one bad dependency does not consume shared resources.
+    **Answer:** One downstream service gets slow, callers wait too long, their worker threads or connection pools fill up, and then that slowness spreads upstream. You contain it with short timeouts, bounded retries with backoff, circuit breakers to fail fast, and bulkheads so one bad dependency does not consume shared resources.
 
-2. What's the difference between a circuit breaker's closed, open, and
-   half-open states?
+- What's the difference between a circuit breaker's closed, open, and
+    half-open states?
 
-   **Answer:** Closed means calls are flowing normally. Open means the breaker has seen enough failures that it stops sending traffic for a while, and half-open means it lets a few test requests through to see whether the dependency has recovered.
+    **Answer:** Closed means calls are flowing normally. Open means the breaker has seen enough failures that it stops sending traffic for a while, and half-open means it lets a few test requests through to see whether the dependency has recovered.
 
-   ```python
-   if state == "open":
+    ```python
+    if state == "open":
        raise DownstreamUnavailable()
-   elif state == "half-open":
+    elif state == "half-open":
        allow_limited_probe_requests()
-   ```
+    ```
 
-3. Why is a bulkhead pattern useful even when a circuit breaker is
-   already in place?
+- Why is a bulkhead pattern useful even when a circuit breaker is
+    already in place?
 
-   **Answer:** A circuit breaker reacts after failures are detected, but a bulkhead protects resource isolation all the time. If one dependency hangs before the breaker trips, its dedicated pool gets hurt, not the threads or connections needed for other healthy dependencies.
+    **Answer:** A circuit breaker reacts after failures are detected, but a bulkhead protects resource isolation all the time. If one dependency hangs before the breaker trips, its dedicated pool gets hurt, not the threads or connections needed for other healthy dependencies.
 
-4. Why would a service rate-limit its own outbound calls to a downstream
-   dependency, rather than relying solely on the dependency's own rate
-   limiting?
+- Why would a service rate-limit its own outbound calls to a downstream
+    dependency, rather than relying solely on the dependency's own rate
+    limiting?
 
-   **Answer:** Because by the time the downstream starts rejecting traffic, you may have already flooded it and tied up your own workers. Self-limiting outbound calls protects both systems earlier and gives you a predictable ceiling during spikes or bugs.
+    **Answer:** Because by the time the downstream starts rejecting traffic, you may have already flooded it and tied up your own workers. Self-limiting outbound calls protects both systems earlier and gives you a predictable ceiling during spikes or bugs.
 
-   ```python
-   if outbound_requests_this_second > 200:
+    ```python
+    if outbound_requests_this_second > 200:
        return fallback_response()
-   ```
+    ```
 
-5. When is graceful degradation the right response to a failure, and
-   when is it the wrong one?
+- When is graceful degradation the right response to a failure, and
+    when is it the wrong one?
 
-   **Answer:** It is right when the failed dependency is useful but not critical, like recommendations, avatars, or analytics. It is wrong when returning partial or guessed behavior would break correctness, such as payments, auth decisions, or inventory confirmation.
+    **Answer:** It is right when the failed dependency is useful but not critical, like recommendations, avatars, or analytics. It is wrong when returning partial or guessed behavior would break correctness, such as payments, auth decisions, or inventory confirmation.
 
 ## Senior-level considerations
 

@@ -179,53 +179,53 @@ reasoning through a complex automated system is valuable in itself.
 
 ## Interview questions
 
-1. What's the difference between continuous delivery and continuous
-   deployment, and what does that distinction depend on?
+- What's the difference between continuous delivery and continuous
+    deployment, and what does that distinction depend on?
 
-   **Answer:** Continuous delivery means every change is automatically
-   built, tested, and made ready to deploy, but a human still clicks
-   "deploy." Continuous deployment goes one step further and deploys to
-   production automatically once tests pass — the distinction is really
-   whether there's a manual approval gate before production.
+    **Answer:** Continuous delivery means every change is automatically
+    built, tested, and made ready to deploy, but a human still clicks
+    "deploy." Continuous deployment goes one step further and deploys to
+    production automatically once tests pass — the distinction is really
+    whether there's a manual approval gate before production.
 
-2. Compare rolling, blue-green, and canary deployment strategies — what
-   problem does each solve, and at what cost?
+- Compare rolling, blue-green, and canary deployment strategies — what
+    problem does each solve, and at what cost?
 
-   **Answer:** Rolling replaces instances gradually with no extra
-   infrastructure but a slower, harder rollback. Blue-green runs two full
-   environments and switches traffic instantly, giving fast rollback at
-   double the infrastructure cost. Canary sends a small percentage of
-   traffic to the new version first, limiting blast radius but requiring
-   good metrics/monitoring to decide when to proceed.
+    **Answer:** Rolling replaces instances gradually with no extra
+    infrastructure but a slower, harder rollback. Blue-green runs two full
+    environments and switches traffic instantly, giving fast rollback at
+    double the infrastructure cost. Canary sends a small percentage of
+    traffic to the new version first, limiting blast radius but requiring
+    good metrics/monitoring to decide when to proceed.
 
-3. Why might `--atomic` not catch every kind of bad deployment, and what
-   additional safeguard addresses that gap?
+- Why might `--atomic` not catch every kind of bad deployment, and what
+    additional safeguard addresses that gap?
 
-   **Answer:** `--atomic` only catches failures Kubernetes/Helm can detect
-   (pods crashing, timeouts) — it won't catch a deployment that "succeeds"
-   but has a subtle logic bug or elevated error rate. Health checks plus
-   real application-level monitoring/alerting catch that gap.
+    **Answer:** `--atomic` only catches failures Kubernetes/Helm can detect
+    (pods crashing, timeouts) — it won't catch a deployment that "succeeds"
+    but has a subtle logic bug or elevated error rate. Health checks plus
+    real application-level monitoring/alerting catch that gap.
 
-4. How do feature flags decouple deployment from release, and why is
-   that useful?
+- How do feature flags decouple deployment from release, and why is
+    that useful?
 
-   **Answer:** Deploying ships the code to production, but a feature flag
-   controls whether it's actually active for users — so you can deploy
-   risky code dark, then flip it on gradually or instantly roll it back
-   without a new deployment at all.
+    **Answer:** Deploying ships the code to production, but a feature flag
+    controls whether it's actually active for users — so you can deploy
+    risky code dark, then flip it on gradually or instantly roll it back
+    without a new deployment at all.
 
-   ```python
-   if feature_flags.is_enabled("new_checkout"):
+    ```python
+    if feature_flags.is_enabled("new_checkout"):
        return new_checkout_flow()
-   ```
+    ```
 
-5. Why is a rehearsed manual rollback procedure still necessary even with
-   automated rollback triggers in place?
+- Why is a rehearsed manual rollback procedure still necessary even with
+    automated rollback triggers in place?
 
-   **Answer:** Automated triggers only cover failure modes someone thought
-   to detect in advance — a novel failure (e.g. a slow data-corruption bug)
-   might not trip any automated trigger at all, so the team needs to know
-   how to roll back by hand under pressure.
+    **Answer:** Automated triggers only cover failure modes someone thought
+    to detect in advance — a novel failure (e.g. a slow data-corruption bug)
+    might not trip any automated trigger at all, so the team needs to know
+    how to roll back by hand under pressure.
 
 ## Senior-level considerations
 

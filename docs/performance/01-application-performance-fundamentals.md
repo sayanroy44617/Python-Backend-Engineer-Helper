@@ -166,49 +166,49 @@ cost.
 
 ## Interview questions
 
-1. Why does adding `async`/`await` not help a CPU-bound bottleneck, even
-   though it helps I/O-bound code significantly?
+- Why does adding `async`/`await` not help a CPU-bound bottleneck, even
+    though it helps I/O-bound code significantly?
 
-   **Answer:** `async`/`await` lets other work run while one task is
-   *waiting* (I/O) — it doesn't make CPU instructions execute faster or
-   in parallel. A CPU-bound task keeps the single event loop thread busy
-   the whole time, so there's no waiting for anything else to fill.
+    **Answer:** `async`/`await` lets other work run while one task is
+    *waiting* (I/O) — it doesn't make CPU instructions execute faster or
+    in parallel. A CPU-bound task keeps the single event loop thread busy
+    the whole time, so there's no waiting for anything else to fill.
 
-2. Walk through how you'd diagnose whether a slow endpoint is CPU-bound
-   or I/O-bound.
+- Walk through how you'd diagnose whether a slow endpoint is CPU-bound
+    or I/O-bound.
 
-   **Answer:** Profile it (`cProfile`/py-spy) and look at where time is
-   actually spent: high time inside your own Python code (loops,
-   computation) points to CPU-bound; high time spent waiting on
-   DB/HTTP/file calls points to I/O-bound. A quick sanity check: CPU-bound
-   work pegs a CPU core near 100%; I/O-bound work leaves the CPU mostly
-   idle while waiting.
+    **Answer:** Profile it (`cProfile`/py-spy) and look at where time is
+    actually spent: high time inside your own Python code (loops,
+    computation) points to CPU-bound; high time spent waiting on
+    DB/HTTP/file calls points to I/O-bound. A quick sanity check: CPU-bound
+    work pegs a CPU core near 100%; I/O-bound work leaves the CPU mostly
+    idle while waiting.
 
-3. Why should horizontal scaling generally come *after*, not instead of,
-   fixing an N+1 query or missing index?
+- Why should horizontal scaling generally come *after*, not instead of,
+    fixing an N+1 query or missing index?
 
-   **Answer:** Scaling adds more instances to handle the same
-   inefficient work, multiplying infrastructure cost without fixing the
-   root cause — an N+1 query fixed once benefits every request forever,
-   for free, versus paying for more servers indefinitely to paper over it.
+    **Answer:** Scaling adds more instances to handle the same
+    inefficient work, multiplying infrastructure cost without fixing the
+    root cause — an N+1 query fixed once benefits every request forever,
+    for free, versus paying for more servers indefinitely to paper over it.
 
-4. What is a latency budget, and how does it help prioritize performance
-   work?
+- What is a latency budget, and how does it help prioritize performance
+    work?
 
-   **Answer:** A latency budget is the total time allowed for a request
-   (e.g. 200ms), broken down across each step (DB query, external call,
-   serialization). It helps prioritize by showing which piece is eating
-   the most of the budget — that's where optimization actually moves the
-   needle.
+    **Answer:** A latency budget is the total time allowed for a request
+    (e.g. 200ms), broken down across each step (DB query, external call,
+    serialization). It helps prioritize by showing which piece is eating
+    the most of the budget — that's where optimization actually moves the
+    needle.
 
-5. What are the most common sources of backend performance problems in
-   practice, and why do database-related issues usually top the list?
+- What are the most common sources of backend performance problems in
+    practice, and why do database-related issues usually top the list?
 
-   **Answer:** N+1 queries, missing indexes, and unbounded result sets
-   are the usual suspects. The database tends to dominate because it's
-   the one component doing disk I/O and lock coordination — CPU-bound
-   Python code is comparatively rare in typical CRUD-style backend
-   services.
+    **Answer:** N+1 queries, missing indexes, and unbounded result sets
+    are the usual suspects. The database tends to dominate because it's
+    the one component doing disk I/O and lock coordination — CPU-bound
+    Python code is comparatively rare in typical CRUD-style backend
+    services.
 
 ## Senior-level considerations
 

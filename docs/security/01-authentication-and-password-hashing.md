@@ -170,43 +170,43 @@ for the general rate-limiting mechanics; login endpoints are exactly the
 
 ## Interview questions
 
-1. Why is a fast hash like SHA-256 a poor choice for storing passwords,
-   even though it's cryptographically secure in other contexts?
+- Why is a fast hash like SHA-256 a poor choice for storing passwords,
+    even though it's cryptographically secure in other contexts?
 
-   **Answer:** SHA-256 is built to be fast, which is great for integrity checks and terrible for password storage because attackers can try huge numbers of guesses cheaply. Password hashes should be deliberately slow and salted so brute force gets expensive.
+    **Answer:** SHA-256 is built to be fast, which is great for integrity checks and terrible for password storage because attackers can try huge numbers of guesses cheaply. Password hashes should be deliberately slow and salted so brute force gets expensive.
 
-   ```python
-   import hashlib
-   import bcrypt
-   
-   sha_hash: str = hashlib.sha256(b"hunter2").hexdigest()
-   bcrypt_hash: bytes = bcrypt.hashpw(b"hunter2", bcrypt.gensalt())
-   ```
+    ```python
+    import hashlib
+    import bcrypt
+    
+    sha_hash: str = hashlib.sha256(b"hunter2").hexdigest()
+    bcrypt_hash: bytes = bcrypt.hashpw(b"hunter2", bcrypt.gensalt())
+    ```
 
-2. What does a salt protect against, and how is it typically stored
-   alongside the hash?
+- What does a salt protect against, and how is it typically stored
+    alongside the hash?
 
-   **Answer:** A salt stops identical passwords from producing identical hashes, which kills rainbow-table attacks and makes password reuse harder to spot from the database alone. In practice the salt is usually embedded in the stored bcrypt/argon2 hash string, not stored in a separate secret place.
+    **Answer:** A salt stops identical passwords from producing identical hashes, which kills rainbow-table attacks and makes password reuse harder to spot from the database alone. In practice the salt is usually embedded in the stored bcrypt/argon2 hash string, not stored in a separate secret place.
 
-3. Compare session-based and token-based authentication: what are the
-   trade-offs for revocation and horizontal scaling?
+- Compare session-based and token-based authentication: what are the
+    trade-offs for revocation and horizontal scaling?
 
-   **Answer:** Sessions are easy to revoke because you delete server-side state, but that means every app instance needs shared session storage. Tokens scale nicely because verification is local, but revoking one token early usually means shorter TTLs, a blocklist, or an extra lookup.
+    **Answer:** Sessions are easy to revoke because you delete server-side state, but that means every app instance needs shared session storage. Tokens scale nicely because verification is local, but revoking one token early usually means shorter TTLs, a blocklist, or an extra lookup.
 
-   ```python
-   session_revoked: bool = True   # delete Redis/DB session row
-   token_revoked: bool = False    # usually need expiry or blocklist check
-   ```
+    ```python
+    session_revoked: bool = True   # delete Redis/DB session row
+    token_revoked: bool = False    # usually need expiry or blocklist check
+    ```
 
-4. Why is `passlib`'s `deprecated="auto"` useful for a system that's been
-   running for years?
+- Why is `passlib`'s `deprecated="auto"` useful for a system that's been
+    running for years?
 
-   **Answer:** It lets you upgrade hashing policy without forcing everyone to reset passwords on the same day. A user logs in with an old hash, verification still works, and the app quietly re-hashes with the newer settings right then.
+    **Answer:** It lets you upgrade hashing policy without forcing everyone to reset passwords on the same day. A user logs in with an old hash, verification still works, and the app quietly re-hashes with the newer settings right then.
 
-5. What are the three categories of authentication factors, and why does
-   combining two matter more than either alone?
+- What are the three categories of authentication factors, and why does
+    combining two matter more than either alone?
 
-   **Answer:** The categories are something you know, something you have, and something you are. Combining two matters because one stolen factor, like a leaked password, still is not enough to get in.
+    **Answer:** The categories are something you know, something you have, and something you are. Combining two matters because one stolen factor, like a leaked password, still is not enough to get in.
 
 ## Senior-level considerations
 

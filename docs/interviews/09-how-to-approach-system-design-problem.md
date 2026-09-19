@@ -267,59 +267,59 @@ flowchart TB
 
 ## Interview questions
 
-1. Why is "one server, one database" often the *correct* answer to
-   start a design, rather than something to apologize for?
+- Why is "one server, one database" often the *correct* answer to
+    start a design, rather than something to apologize for?
 
-   **Answer:** Because a huge share of real systems never exceed what a
-   single well-provisioned server and database can handle. Starting
-   simple and justifying each addition with an actual bottleneck is a
-   stronger signal than defaulting to maximum complexity.
+    **Answer:** Because a huge share of real systems never exceed what a
+    single well-provisioned server and database can handle. Starting
+    simple and justifying each addition with an actual bottleneck is a
+    stronger signal than defaulting to maximum complexity.
 
-2. You've added multiple app servers behind a load balancer. What two
-   new problems does this introduce, and how do you solve each?
+- You've added multiple app servers behind a load balancer. What two
+    new problems does this introduce, and how do you solve each?
 
-   **Answer:** The load balancer becomes a new single point of failure,
-   solved with a standby/redundant pair. And a user's session may not
-   be visible to whichever server handles their next request, solved by
-   making servers stateless and storing session state centrally (e.g.
-   Redis).
+    **Answer:** The load balancer becomes a new single point of failure,
+    solved with a standby/redundant pair. And a user's session may not
+    be visible to whichever server handles their next request, solved by
+    making servers stateless and storing session state centrally (e.g.
+    Redis).
 
-3. Your app is scaled to 30 instances and the database is refusing new
-   connections, even though query volume hasn't grown that much. What's
-   the likely cause and fix?
+- Your app is scaled to 30 instances and the database is refusing new
+    connections, even though query volume hasn't grown that much. What's
+    the likely cause and fix?
 
-   **Answer:** Each instance is likely opening its own connection pool,
-   and the sum across all instances exceeds what the database can
-   sustain. A centralized connection pooler (e.g. PgBouncer) fixes this
-   by presenting the database with a small, constant number of
-   connections that app instances borrow and release.
+    **Answer:** Each instance is likely opening its own connection pool,
+    and the sum across all instances exceeds what the database can
+    sustain. A centralized connection pooler (e.g. PgBouncer) fixes this
+    by presenting the database with a small, constant number of
+    connections that app instances borrow and release.
 
-4. When would you introduce read replicas, and what's the catch?
+- When would you introduce read replicas, and what's the catch?
 
-   **Answer:** When reads vastly outnumber writes and the primary can't
-   keep up with read load. The catch is replication lag — replicas
-   trail the primary, so you must decide per-feature whether that
-   staleness is acceptable (a balance shouldn't read from a lagging
-   replica; a follower count usually can).
+    **Answer:** When reads vastly outnumber writes and the primary can't
+    keep up with read load. The catch is replication lag — replicas
+    trail the primary, so you must decide per-feature whether that
+    staleness is acceptable (a balance shouldn't read from a lagging
+    replica; a follower count usually can).
 
-5. Why would you use a message queue for sending a verification email
-   instead of sending it directly in the request handler?
+- Why would you use a message queue for sending a verification email
+    instead of sending it directly in the request handler?
 
-   **Answer:** So a slow or unreliable email provider doesn't block or
-   fail the user's signup request. The app enqueues the work and
-   responds immediately; a separate worker processes the queue
-   independently, decoupling the user-facing request's latency from the
-   background work's latency.
+    **Answer:** So a slow or unreliable email provider doesn't block or
+    fail the user's signup request. The app enqueues the work and
+    responds immediately; a separate worker processes the queue
+    independently, decoupling the user-facing request's latency from the
+    background work's latency.
 
-6. Why is sharding usually the last technique you reach for, not the
-   first?
+- Why is sharding usually the last technique you reach for, not the
+    first?
 
-   **Answer:** Because it's the most operationally disruptive: it turns
-   simple aggregate queries (totals, counts) into cross-shard fan-outs
-   that must be merged in the application, and it requires a
-   partitioning scheme (e.g. `user_id % N`) that's hard to change later.
-   Indexing, read replicas, and caching solve most scaling problems at
-   far lower cost first.
+    **Answer:** Because it's the most operationally disruptive: it turns
+    simple aggregate queries (totals, counts) into cross-shard fan-outs
+    that must be merged in the application, and it requires a
+    partitioning scheme (e.g. `user_id % N`) that's hard to change later.
+    Indexing, read replicas, and caching solve most scaling problems at
+    far lower cost first.
 
 ## Senior-level considerations
 

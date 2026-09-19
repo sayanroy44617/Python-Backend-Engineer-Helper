@@ -165,68 +165,68 @@ FROM orders;
 
 ## Interview questions
 
-1. What's the difference between a `GROUP BY` aggregate and a window
-   function that also aggregates?
+- What's the difference between a `GROUP BY` aggregate and a window
+    function that also aggregates?
 
-   **Answer:** `GROUP BY` collapses many rows into one row per group,
-   losing the original row detail. A window function (`OVER (...)`)
-   computes the aggregate *per row* while keeping every original row
-   intact — you get both the detail and the aggregate side by side.
+    **Answer:** `GROUP BY` collapses many rows into one row per group,
+    losing the original row detail. A window function (`OVER (...)`)
+    computes the aggregate *per row* while keeping every original row
+    intact — you get both the detail and the aggregate side by side.
 
-   ```sql
-   SELECT user_id, amount,
+    ```sql
+    SELECT user_id, amount,
           SUM(amount) OVER (PARTITION BY user_id) AS user_total
-   FROM orders;
-   ```
+    FROM orders;
+    ```
 
-2. What is a correlated subquery, and why can it be slower than a join?
+- What is a correlated subquery, and why can it be slower than a join?
 
-   **Answer:** A correlated subquery references a column from the outer
-   query, so conceptually it re-runs once per outer row. A join usually
-   lets the planner do it in one combined pass instead of N separate
-   lookups.
+    **Answer:** A correlated subquery references a column from the outer
+    query, so conceptually it re-runs once per outer row. A join usually
+    lets the planner do it in one combined pass instead of N separate
+    lookups.
 
-3. How would you compute a running total per user using a window
-   function?
+- How would you compute a running total per user using a window
+    function?
 
-   **Answer:** Use `SUM(...) OVER (PARTITION BY ... ORDER BY ...)` — the
-   `PARTITION BY` restarts the total per user, and `ORDER BY` makes it
-   accumulate row by row instead of summing the whole partition at once.
+    **Answer:** Use `SUM(...) OVER (PARTITION BY ... ORDER BY ...)` — the
+    `PARTITION BY` restarts the total per user, and `ORDER BY` makes it
+    accumulate row by row instead of summing the whole partition at once.
 
-   ```sql
-   SELECT user_id, order_date, amount,
+    ```sql
+    SELECT user_id, order_date, amount,
           SUM(amount) OVER (
               PARTITION BY user_id ORDER BY order_date
           ) AS running_total
-   FROM orders;
-   ```
+    FROM orders;
+    ```
 
-4. What's the difference between `RANK()`, `DENSE_RANK()`, and
-   `ROW_NUMBER()`?
+- What's the difference between `RANK()`, `DENSE_RANK()`, and
+    `ROW_NUMBER()`?
 
-   **Answer:** `ROW_NUMBER()` always gives unique, sequential numbers
-   (1,2,3,4) even for ties. `RANK()` gives ties the same rank but skips
-   the next number (1,2,2,4). `DENSE_RANK()` gives ties the same rank
-   without skipping (1,2,2,3).
+    **Answer:** `ROW_NUMBER()` always gives unique, sequential numbers
+    (1,2,3,4) even for ties. `RANK()` gives ties the same rank but skips
+    the next number (1,2,2,4). `DENSE_RANK()` gives ties the same rank
+    without skipping (1,2,2,3).
 
-5. How would you query a hierarchical structure (e.g. an org chart) using
-   a recursive CTE?
+- How would you query a hierarchical structure (e.g. an org chart) using
+    a recursive CTE?
 
-   **Answer:** Define an anchor member (the root rows, e.g.
-   `manager_id IS NULL`), then a recursive member that joins the CTE back
-   to the base table to walk one level deeper each iteration, until no
-   more matching rows are found.
+    **Answer:** Define an anchor member (the root rows, e.g.
+    `manager_id IS NULL`), then a recursive member that joins the CTE back
+    to the base table to walk one level deeper each iteration, until no
+    more matching rows are found.
 
-   ```sql
-   WITH RECURSIVE org_chart AS (
+    ```sql
+    WITH RECURSIVE org_chart AS (
        SELECT id, manager_id, name FROM employees WHERE manager_id IS NULL
        UNION ALL
        SELECT e.id, e.manager_id, e.name
        FROM employees e
        JOIN org_chart o ON e.manager_id = o.id
-   )
-   SELECT * FROM org_chart;
-   ```
+    )
+    SELECT * FROM org_chart;
+    ```
 
 ## Senior-level considerations
 

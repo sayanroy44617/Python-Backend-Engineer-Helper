@@ -180,44 +180,44 @@ level.
 
 ## Interview questions
 
-1. What do `__enter__`/`__exit__` need to return, and what does the return
-   value of `__exit__` control?
+- What do `__enter__`/`__exit__` need to return, and what does the return
+    value of `__exit__` control?
 
-   **Answer:** `__enter__` usually returns the object you want bound after `as`, though it can return something else if that makes the API cleaner. `__exit__` controls whether exceptions are suppressed: truthy swallows the exception, falsy lets it bubble up.
+    **Answer:** `__enter__` usually returns the object you want bound after `as`, though it can return something else if that makes the API cleaner. `__exit__` controls whether exceptions are suppressed: truthy swallows the exception, falsy lets it bubble up.
 
-2. Show how `contextlib.contextmanager` maps `yield` to
-   `__enter__`/`__exit__`.
+- Show how `contextlib.contextmanager` maps `yield` to
+    `__enter__`/`__exit__`.
 
-   **Answer:** Everything before `yield` is setup, and the yielded value is what `with ... as ...` receives. Everything after `yield`, usually in `finally`, is teardown and runs even if the block fails.
+    **Answer:** Everything before `yield` is setup, and the yielded value is what `with ... as ...` receives. Everything after `yield`, usually in `finally`, is teardown and runs even if the block fails.
 
-   ```python
-   from contextlib import contextmanager
+    ```python
+    from contextlib import contextmanager
 
-   @contextmanager
-   def managed(name: str):
+    @contextmanager
+    def managed(name: str):
        print(f"open {name}")
        try:
            yield name
        finally:
            print(f"close {name}")
-   ```
+    ```
 
-3. When would you use `ExitStack`?
+- When would you use `ExitStack`?
 
-   **Answer:** Use `ExitStack` when you need to manage a dynamic number of resources or the exact set isn't known until runtime. It's the clean way to say "open a bunch of things and make sure all successful opens get cleaned up."
+    **Answer:** Use `ExitStack` when you need to manage a dynamic number of resources or the exact set isn't known until runtime. It's the clean way to say "open a bunch of things and make sure all successful opens get cleaned up."
 
-4. What's the difference between a data descriptor and a non-data
-   descriptor? Why does it matter?
+- What's the difference between a data descriptor and a non-data
+    descriptor? Why does it matter?
 
-   **Answer:** A data descriptor has `__set__` or `__delete__` in addition to `__get__`, so it wins over instance attributes during lookup. A non-data descriptor only defines `__get__`, so an instance attribute with the same name can override it.
+    **Answer:** A data descriptor has `__set__` or `__delete__` in addition to `__get__`, so it wins over instance attributes during lookup. A non-data descriptor only defines `__get__`, so an instance attribute with the same name can override it.
 
-5. How is `@property` implemented in terms of descriptors?
+- How is `@property` implemented in terms of descriptors?
 
-   **Answer:** `@property` creates a descriptor object whose `__get__`, `__set__`, and `__delete__` methods call your getter/setter/deleter functions. That's why property logic runs on attribute access without you calling a method directly.
+    **Answer:** `@property` creates a descriptor object whose `__get__`, `__set__`, and `__delete__` methods call your getter/setter/deleter functions. That's why property logic runs on attribute access without you calling a method directly.
 
-6. Why shouldn't `__exit__` suppress exceptions by default?
+- Why shouldn't `__exit__` suppress exceptions by default?
 
-   **Answer:** Because cleanup and error handling are different jobs, and swallowing unexpected exceptions makes production failures much harder to see and debug. You should only return `True` when suppressing a very specific, intentional error case.
+    **Answer:** Because cleanup and error handling are different jobs, and swallowing unexpected exceptions makes production failures much harder to see and debug. You should only return `True` when suppressing a very specific, intentional error case.
 
 ## Senior-level considerations
 

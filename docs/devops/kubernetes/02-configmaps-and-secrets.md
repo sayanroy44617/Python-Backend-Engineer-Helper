@@ -215,63 +215,63 @@ in
 
 ## Interview questions
 
-1. Why is a Kubernetes Secret's base64 encoding not equivalent to
-   encryption, and what additional layers actually protect it?
+- Why is a Kubernetes Secret's base64 encoding not equivalent to
+    encryption, and what additional layers actually protect it?
 
-   **Answer:** Base64 only changes representation; anyone who can read the
-   Secret can decode it immediately. Real protection comes from tight RBAC,
-   encryption at rest for etcd, and often storing the real source of truth in
-   an external secrets manager.
+    **Answer:** Base64 only changes representation; anyone who can read the
+    Secret can decode it immediately. Real protection comes from tight RBAC,
+    encryption at rest for etcd, and often storing the real source of truth in
+    an external secrets manager.
 
-   ```bash
-   echo "YXBwdXNlcg==" | base64 -d
-   ```
+    ```bash
+    echo "YXBwdXNlcg==" | base64 -d
+    ```
 
-2. What's the practical (not just naming) difference between a ConfigMap
-   and a Secret?
+- What's the practical (not just naming) difference between a ConfigMap
+    and a Secret?
 
-   **Answer:** Both are injected into Pods in similar ways, but a Secret tells
-   the platform and the team that the value is sensitive and should have
-   stricter handling. In practice that usually means tighter RBAC, auditing,
-   and different GitOps rules than a normal ConfigMap.
+    **Answer:** Both are injected into Pods in similar ways, but a Secret tells
+    the platform and the team that the value is sensitive and should have
+    stricter handling. In practice that usually means tighter RBAC, auditing,
+    and different GitOps rules than a normal ConfigMap.
 
-3. How would you avoid committing real secret values to version control
-   while still managing Kubernetes manifests via GitOps?
+- How would you avoid committing real secret values to version control
+    while still managing Kubernetes manifests via GitOps?
 
-   **Answer:** Commit encrypted secret manifests or commit only references to an
-   external secrets system, not raw values. A common setup is SOPS or Sealed
-   Secrets in Git, or an `ExternalSecret` that pulls the real value at deploy
-   time.
+    **Answer:** Commit encrypted secret manifests or commit only references to an
+    external secrets system, not raw values. A common setup is SOPS or Sealed
+    Secrets in Git, or an `ExternalSecret` that pulls the real value at deploy
+    time.
 
-   ```yaml
-   kind: ExternalSecret
-   spec:
+    ```yaml
+    kind: ExternalSecret
+    spec:
      target:
        name: db-credentials
-   ```
+    ```
 
-4. Why would a production cluster typically sync Secrets from an external
-   secrets manager rather than storing the source of truth as native
-   Kubernetes Secrets?
+- Why would a production cluster typically sync Secrets from an external
+    secrets manager rather than storing the source of truth as native
+    Kubernetes Secrets?
 
-   **Answer:** External managers usually give you better rotation, auditing,
-   access control, and reuse across multiple systems. That keeps Kubernetes as
-   a consumer of secrets instead of turning it into the main place where every
-   credential is manually managed.
+    **Answer:** External managers usually give you better rotation, auditing,
+    access control, and reuse across multiple systems. That keeps Kubernetes as
+    a consumer of secrets instead of turning it into the main place where every
+    credential is manually managed.
 
-5. How does RBAC apply the principle of least privilege specifically to
-   Secret access?
+- How does RBAC apply the principle of least privilege specifically to
+    Secret access?
 
-   **Answer:** RBAC should let a workload read only the exact Secret names it
-   needs, not every Secret in the namespace. That way, if one service account
-   is overused or compromised, it cannot automatically read unrelated database
-   passwords or API keys.
+    **Answer:** RBAC should let a workload read only the exact Secret names it
+    needs, not every Secret in the namespace. That way, if one service account
+    is overused or compromised, it cannot automatically read unrelated database
+    passwords or API keys.
 
-   ```yaml
-   resources: ["secrets"]
-   resourceNames: ["db-credentials"]
-   verbs: ["get"]
-   ```
+    ```yaml
+    resources: ["secrets"]
+    resourceNames: ["db-credentials"]
+    verbs: ["get"]
+    ```
 
 ## Senior-level considerations
 

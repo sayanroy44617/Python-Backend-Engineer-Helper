@@ -152,49 +152,49 @@ need to describe "any object with this method" without forcing inheritance.
 
 ## Interview questions
 
-1. What's the difference between inheritance and composition? Give a
-   backend example.
+- What's the difference between inheritance and composition? Give a
+    backend example.
 
-   **Answer:** Inheritance says one class is a specialized version of another; composition says one class uses another to get work done. In backend code, `RefundService` using a `PaymentGateway` dependency is usually composition, and it's easier to swap in tests.
+    **Answer:** Inheritance says one class is a specialized version of another; composition says one class uses another to get work done. In backend code, `RefundService` using a `PaymentGateway` dependency is usually composition, and it's easier to swap in tests.
 
-   ```python
-   class PaymentGateway:
+    ```python
+    class PaymentGateway:
        def charge(self, amount: int) -> None:
            print(amount)
-   ```
+    ```
 
-2. Explain Python's MRO with a diamond inheritance example.
+- Explain Python's MRO with a diamond inheritance example.
 
-   **Answer:** MRO is the order Python follows when resolving methods across parent classes. In a diamond shape, Python uses C3 linearization so each base appears once in a predictable order.
+    **Answer:** MRO is the order Python follows when resolving methods across parent classes. In a diamond shape, Python uses C3 linearization so each base appears once in a predictable order.
 
-   ```python
-   class A: ...
-   class B(A): ...
-   class C(A): ...
-   class D(B, C): ...
+    ```python
+    class A: ...
+    class B(A): ...
+    class C(A): ...
+    class D(B, C): ...
 
-   print(D.__mro__)
-   ```
+    print(D.__mro__)
+    ```
 
-3. When would you choose an `ABC` over a `Protocol`, and vice versa?
+- When would you choose an `ABC` over a `Protocol`, and vice versa?
 
-   **Answer:** Use an `ABC` when you want a real base class with shared logic and runtime enforcement. Use a `Protocol` when you only care about the method shape and don't want to force inheritance.
+    **Answer:** Use an `ABC` when you want a real base class with shared logic and runtime enforcement. Use a `Protocol` when you only care about the method shape and don't want to force inheritance.
 
  4. Why is "favor composition over inheritance" a common guideline?
 
-   **Answer:** Because composition keeps dependencies explicit and swappable, while inheritance tends to couple behavior into a hierarchy that's harder to change later. It's usually the safer default in service code where requirements move a lot.
+    **Answer:** Because composition keeps dependencies explicit and swappable, while inheritance tends to couple behavior into a hierarchy that's harder to change later. It's usually the safer default in service code where requirements move a lot.
 
-5. What does `@abstractmethod` actually enforce, and when?
+- What does `@abstractmethod` actually enforce, and when?
 
-   **Answer:** It prevents you from instantiating a class until all abstract methods are implemented. It does not validate business semantics; it only enforces that the required method names exist.
+    **Answer:** It prevents you from instantiating a class until all abstract methods are implemented. It does not validate business semantics; it only enforces that the required method names exist.
 
-   ```python
-   from abc import ABC, abstractmethod
+    ```python
+    from abc import ABC, abstractmethod
 
-   class Base(ABC):
+    class Base(ABC):
        @abstractmethod
        def run(self) -> None: ...
-   ```
+    ```
 
 ## Senior-level considerations
 

@@ -177,39 +177,39 @@ image can declare `EXPOSE 8000` and still be unreachable if run without
 
 ## Interview questions
 
-1. Why is a container's own filesystem considered ephemeral, and what
-   problem do volumes solve?
+- Why is a container's own filesystem considered ephemeral, and what
+    problem do volumes solve?
 
-   **Answer:** A container's writable layer disappears with the container, so it is the wrong place for durable data. Volumes decouple storage from container lifetime, which is why databases and uploaded files should live there.
+    **Answer:** A container's writable layer disappears with the container, so it is the wrong place for durable data. Volumes decouple storage from container lifetime, which is why databases and uploaded files should live there.
 
-2. What's the difference between a named volume and a bind mount, and
-   when would you use each?
+- What's the difference between a named volume and a bind mount, and
+    when would you use each?
 
-   **Answer:** A named volume is Docker-managed storage, which is the usual choice for persistent service data. A bind mount maps a host path directly into the container, which is handy in local development when you want code changes to show up immediately.
+    **Answer:** A named volume is Docker-managed storage, which is the usual choice for persistent service data. A bind mount maps a host path directly into the container, which is handy in local development when you want code changes to show up immediately.
 
-   ```bash
-   docker run -v pgdata:/var/lib/postgresql/data postgres:16
-   docker run -v $(pwd)/app:/app myapp:1.0
-   ```
+    ```bash
+    docker run -v pgdata:/var/lib/postgresql/data postgres:16
+    docker run -v $(pwd)/app:/app myapp:1.0
+    ```
 
-3. Why do containers need a user-defined network (rather than the
-   default bridge) to reliably resolve each other by name?
+- Why do containers need a user-defined network (rather than the
+    default bridge) to reliably resolve each other by name?
 
-   **Answer:** Docker gives you built-in DNS on user-defined networks, so containers can call each other by service name instead of hard-coded IPs. That makes restarts and scaling much less brittle.
+    **Answer:** Docker gives you built-in DNS on user-defined networks, so containers can call each other by service name instead of hard-coded IPs. That makes restarts and scaling much less brittle.
 
-4. What does `EXPOSE` in a Dockerfile actually do, and what does it *not*
-   do?
+- What does `EXPOSE` in a Dockerfile actually do, and what does it *not*
+    do?
 
-   **Answer:** `EXPOSE` documents the port the app listens on, but it does not publish that port to the host. You still need `-p` at runtime if you want traffic from outside the Docker network.
+    **Answer:** `EXPOSE` documents the port the app listens on, but it does not publish that port to the host. You still need `-p` at runtime if you want traffic from outside the Docker network.
 
-   ```bash
-   docker run -p 8000:8000 myapp:1.0
-   ```
+    ```bash
+    docker run -p 8000:8000 myapp:1.0
+    ```
 
-5. Why are environment variables the standard way to configure the same
-   image differently across environments?
+- Why are environment variables the standard way to configure the same
+    image differently across environments?
 
-   **Answer:** They let you keep one immutable image and change only runtime config between dev, staging, and production. That avoids rebuilding the image just because `DATABASE_URL` or `LOG_LEVEL` changed.
+    **Answer:** They let you keep one immutable image and change only runtime config between dev, staging, and production. That avoids rebuilding the image just because `DATABASE_URL` or `LOG_LEVEL` changed.
 
 ## Senior-level considerations
 

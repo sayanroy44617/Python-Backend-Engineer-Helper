@@ -170,44 +170,44 @@ speculating about the cause.
 
 ## Interview questions
 
-1. What's the difference between `kubectl apply` and `kubectl create`,
-   and why does that matter for CI/CD pipelines?
+- What's the difference between `kubectl apply` and `kubectl create`,
+    and why does that matter for CI/CD pipelines?
 
-   **Answer:** `kubectl create` is mainly for creating something once and it fails if the resource already exists. `kubectl apply` is declarative and idempotent, which makes it a much better fit for repeatable deploys in CI/CD.
+    **Answer:** `kubectl create` is mainly for creating something once and it fails if the resource already exists. `kubectl apply` is declarative and idempotent, which makes it a much better fit for repeatable deploys in CI/CD.
 
-   ```bash
-   kubectl apply -f deployment.yaml
-   kubectl rollout status deployment/api
-   ```
+    ```bash
+    kubectl apply -f deployment.yaml
+    kubectl rollout status deployment/api
+    ```
 
-2. Walk through your troubleshooting steps for a Pod stuck in
-   `CrashLoopBackOff`.
+- Walk through your troubleshooting steps for a Pod stuck in
+    `CrashLoopBackOff`.
 
-   **Answer:** First I check `kubectl describe pod` to see restart events and exit reasons, then `kubectl logs --previous` to catch the last crash output. After that, if needed, I inspect config like env vars, secrets, or dependency connectivity because most crash loops come from bad startup config or app boot failures.
+    **Answer:** First I check `kubectl describe pod` to see restart events and exit reasons, then `kubectl logs --previous` to catch the last crash output. After that, if needed, I inspect config like env vars, secrets, or dependency connectivity because most crash loops come from bad startup config or app boot failures.
 
-3. A Service has Pods that are `Running`, but no traffic reaches them —
-   what would you check first?
+- A Service has Pods that are `Running`, but no traffic reaches them —
+    what would you check first?
 
-   **Answer:** I would first check the Service endpoints and the Pod labels, because a Running Pod may still not match the Service selector. Right after that I would check readiness, since Pods that fail readiness are excluded from endpoints even when they are up.
+    **Answer:** I would first check the Service endpoints and the Pod labels, because a Running Pod may still not match the Service selector. Right after that I would check readiness, since Pods that fail readiness are excluded from endpoints even when they are up.
 
-   ```bash
-   kubectl get endpoints <service-name>
-   kubectl describe service <service-name>
-   ```
+    ```bash
+    kubectl get endpoints <service-name>
+    kubectl describe service <service-name>
+    ```
 
-4. Why is `kubectl logs --previous` important, and when would you need
-   it specifically?
+- Why is `kubectl logs --previous` important, and when would you need
+    it specifically?
 
-   **Answer:** It shows logs from the last terminated container instance, which is often where the real error lives. You need it most when a container is restarting quickly, like in `CrashLoopBackOff`, because the current instance may not have reached the failure point yet.
+    **Answer:** It shows logs from the last terminated container instance, which is often where the real error lives. You need it most when a container is restarting quickly, like in `CrashLoopBackOff`, because the current instance may not have reached the failure point yet.
 
-5. What are the common causes of a Pod stuck in `Pending` state?
+- What are the common causes of a Pod stuck in `Pending` state?
 
-   **Answer:** The scheduler usually cannot place it because of missing cluster capacity, resource requests that are too large, node selectors or affinity rules that match no nodes, or taints without matching tolerations. In practice, `kubectl describe pod` events usually tell you which of those is happening.
+    **Answer:** The scheduler usually cannot place it because of missing cluster capacity, resource requests that are too large, node selectors or affinity rules that match no nodes, or taints without matching tolerations. In practice, `kubectl describe pod` events usually tell you which of those is happening.
 
-   ```bash
-   kubectl describe pod <pod-name>
-   kubectl describe nodes
-   ```
+    ```bash
+    kubectl describe pod <pod-name>
+    kubectl describe nodes
+    ```
 
 ## Senior-level considerations
 

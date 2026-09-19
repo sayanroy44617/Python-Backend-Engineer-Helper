@@ -365,144 +365,144 @@ nums = [n for n in nums if n % 2 != 0]
 
 ## Interview questions
 
-1. What's the difference between `is` and `==`? When would `is` give a
-   surprising result?
+- What's the difference between `is` and `==`? When would `is` give a
+    surprising result?
 
-   **Answer:** `==` compares values; `is` compares object identity. `is`
-   gets surprising when CPython reuses objects like small integers or interned
-   strings, so two equal values may sometimes be the same object and sometimes not.
+    **Answer:** `==` compares values; `is` compares object identity. `is`
+    gets surprising when CPython reuses objects like small integers or interned
+    strings, so two equal values may sometimes be the same object and sometimes not.
 
-   ```python
-   a: list[int] = [1, 2]
-   b: list[int] = [1, 2]
-   print(a == b)  # True
-   print(a is b)  # False
-   ```
+    ```python
+    a: list[int] = [1, 2]
+    b: list[int] = [1, 2]
+    print(a == b)  # True
+    print(a is b)  # False
+    ```
 
-2. Why is a mutable default argument a bug? How do you fix it?
+- Why is a mutable default argument a bug? How do you fix it?
 
-   **Answer:** The default object is created once at function definition time,
-   so every call shares the same list or dict. Use `None` as the default and
-   create a fresh object inside the function.
+    **Answer:** The default object is created once at function definition time,
+    so every call shares the same list or dict. Use `None` as the default and
+    create a fresh object inside the function.
 
-   ```python
-   def add_tag(tag: str, tags: list[str] | None = None) -> list[str]:
+    ```python
+    def add_tag(tag: str, tags: list[str] | None = None) -> list[str]:
        tags = [] if tags is None else tags
        tags.append(tag)
        return tags
-   ```
+    ```
 
-3. When would you choose a `tuple` over a `list`?
+- When would you choose a `tuple` over a `list`?
 
-   **Answer:** Use a `tuple` when the shape should not change and immutability
-   is part of the contract, like coordinates or composite dict keys. It also
-   signals to other engineers that "this is a fixed record, not a work queue."
+    **Answer:** Use a `tuple` when the shape should not change and immutability
+    is part of the contract, like coordinates or composite dict keys. It also
+    signals to other engineers that "this is a fixed record, not a work queue."
 
-   ```python
-   location: tuple[float, float] = (12.97, 77.59)
-   cache_key: tuple[str, int] = ("user", 42)
-   ```
+    ```python
+    location: tuple[float, float] = (12.97, 77.59)
+    cache_key: tuple[str, int] = ("user", 42)
+    ```
 
-4. What's the time complexity of membership testing (`in`) for a `list` vs a
-   `set`? Why?
+- What's the time complexity of membership testing (`in`) for a `list` vs a
+    `set`? Why?
 
-   **Answer:** `x in list` is O(n) because Python may need to scan each item.
-   `x in set` is O(1) on average because sets are hash tables.
+    **Answer:** `x in list` is O(n) because Python may need to scan each item.
+    `x in set` is O(1) on average because sets are hash tables.
 
-   ```python
-   allowed_ids: set[int] = {1, 2, 3}
-   print(3 in allowed_ids)  # True
-   ```
+    ```python
+    allowed_ids: set[int] = {1, 2, 3}
+    print(3 in allowed_ids)  # True
+    ```
 
-5. Explain shallow vs deep copy with an example involving nested structures.
+- Explain shallow vs deep copy with an example involving nested structures.
 
-   **Answer:** A shallow copy creates a new outer container but keeps nested
-   references shared; a deep copy clones nested objects too. That matters when
-   mutating nested state like request payloads or ORM-ish dict trees.
+    **Answer:** A shallow copy creates a new outer container but keeps nested
+    references shared; a deep copy clones nested objects too. That matters when
+    mutating nested state like request payloads or ORM-ish dict trees.
 
-   ```python
-   import copy
+    ```python
+    import copy
 
-   data: dict[str, list[int]] = {"ids": [1, 2]}
-   shallow = data.copy()
-   deep = copy.deepcopy(data)
-   ```
+    data: dict[str, list[int]] = {"ids": [1, 2]}
+    shallow = data.copy()
+    deep = copy.deepcopy(data)
+    ```
 
-6. Why can't you use a `list` as a dictionary key?
+- Why can't you use a `list` as a dictionary key?
 
-   **Answer:** Dict keys must be hashable, and a `list` is mutable so its value
-   can change after insertion. Python blocks that because changing the key would
-   break the hash table's bookkeeping.
+    **Answer:** Dict keys must be hashable, and a `list` is mutable so its value
+    can change after insertion. Python blocks that because changing the key would
+    break the hash table's bookkeeping.
 
-   ```python
-   key: tuple[str, int] = ("user", 1)
-   cache: dict[tuple[str, int], str] = {key: "hit"}
-   ```
+    ```python
+    key: tuple[str, int] = ("user", 1)
+    cache: dict[tuple[str, int], str] = {key: "hit"}
+    ```
 
-7. What's the difference between `dict.get(key)` and `dict[key]` when the
-   key is missing?
+- What's the difference between `dict.get(key)` and `dict[key]` when the
+    key is missing?
 
-   **Answer:** `dict[key]` raises `KeyError`; `dict.get(key)` returns `None` or
-   a default you provide. Use `get` when "missing" is expected, and `[]` when
-   missing should be treated as a bug.
+    **Answer:** `dict[key]` raises `KeyError`; `dict.get(key)` returns `None` or
+    a default you provide. Use `get` when "missing" is expected, and `[]` when
+    missing should be treated as a bug.
 
-   ```python
-   config: dict[str, str] = {"env": "prod"}
-   print(config.get("region", "us-east-1"))
-   ```
+    ```python
+    config: dict[str, str] = {"env": "prod"}
+    print(config.get("region", "us-east-1"))
+    ```
 
-8. What does `dict.setdefault()` do, and how is it useful for grouping
-   items by a key?
+- What does `dict.setdefault()` do, and how is it useful for grouping
+    items by a key?
 
-   **Answer:** It returns the existing value for a key, or inserts a default
-   and returns that. It's handy for grouping because you can create the bucket
-   and append in one line.
+    **Answer:** It returns the existing value for a key, or inserts a default
+    and returns that. It's handy for grouping because you can create the bucket
+    and append in one line.
 
-   ```python
-   grouped: dict[str, list[str]] = {}
-   for name in ["ana", "bo", "aria"]:
+    ```python
+    grouped: dict[str, list[str]] = {}
+    for name in ["ana", "bo", "aria"]:
        grouped.setdefault(name[0], []).append(name)
-   ```
+    ```
 
-9. What's the difference between `list.sort()` and the built-in
-   `sorted()`?
+- What's the difference between `list.sort()` and the built-in
+    `sorted()`?
 
-   **Answer:** `list.sort()` mutates the list in place and returns `None`;
-   `sorted()` returns a new list and works with any iterable. Use `sorted()`
-   when you need the original order preserved.
+    **Answer:** `list.sort()` mutates the list in place and returns `None`;
+    `sorted()` returns a new list and works with any iterable. Use `sorted()`
+    when you need the original order preserved.
 
-   ```python
-   scores: list[int] = [3, 1, 2]
-   ordered = sorted(scores)
-   print(scores, ordered)
-   ```
+    ```python
+    scores: list[int] = [3, 1, 2]
+    ordered = sorted(scores)
+    print(scores, ordered)
+    ```
 
-10. When would you reach for `collections.defaultdict` or
+- When would you reach for `collections.defaultdict` or
     `collections.Counter` instead of a plain `dict`?
 
-   **Answer:** `defaultdict` is good when missing keys should auto-create a
-   bucket; `Counter` is good when the job is counting occurrences. They remove
-   repetitive guard code and make intent obvious.
+    **Answer:** `defaultdict` is good when missing keys should auto-create a
+    bucket; `Counter` is good when the job is counting occurrences. They remove
+    repetitive guard code and make intent obvious.
 
-   ```python
-   from collections import Counter
+    ```python
+    from collections import Counter
 
-   counts: Counter[str] = Counter(["ok", "ok", "fail"])
-   print(counts["ok"])  # 2
-   ```
+    counts: Counter[str] = Counter(["ok", "ok", "fail"])
+    print(counts["ok"])  # 2
+    ```
 
-11. Why is `deque` preferred over `list` for a queue that needs to pop
+- Why is `deque` preferred over `list` for a queue that needs to pop
     from the front frequently?
 
-   **Answer:** `list.pop(0)` is O(n) because all remaining items shift left.
-   `deque.popleft()` is O(1), so it stays fast under queue-like workloads.
+    **Answer:** `list.pop(0)` is O(n) because all remaining items shift left.
+    `deque.popleft()` is O(1), so it stays fast under queue-like workloads.
 
-   ```python
-   from collections import deque
+    ```python
+    from collections import deque
 
-   queue: deque[int] = deque([1, 2, 3])
-   print(queue.popleft())  # 1
-   ```
+    queue: deque[int] = deque([1, 2, 3])
+    print(queue.popleft())  # 1
+    ```
 
 ## Senior-level considerations
 

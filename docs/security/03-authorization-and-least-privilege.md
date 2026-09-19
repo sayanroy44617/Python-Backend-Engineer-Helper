@@ -183,35 +183,35 @@ after the fact.
 
 ## Interview questions
 
-1. What's the difference between RBAC and ABAC, and when would you reach
-   for each?
+- What's the difference between RBAC and ABAC, and when would you reach
+    for each?
 
-   **Answer:** RBAC maps users to fixed roles, so it's the right default when permissions are mostly "admins can do X, editors can do Y." ABAC evaluates attributes like owner, tenant, or department, so you reach for it when access depends on the specific resource or request context.
+    **Answer:** RBAC maps users to fixed roles, so it's the right default when permissions are mostly "admins can do X, editors can do Y." ABAC evaluates attributes like owner, tenant, or department, so you reach for it when access depends on the specific resource or request context.
 
-2. Why is a role check alone often insufficient for multi-tenant or
-   per-resource authorization?
+- Why is a role check alone often insufficient for multi-tenant or
+    per-resource authorization?
 
-   **Answer:** A role tells you what someone can generally do, not whether they should touch this exact record. In a multi-tenant app, an editor may edit invoices, but only inside their own tenant or only the ones they own.
+    **Answer:** A role tells you what someone can generally do, not whether they should touch this exact record. In a multi-tenant app, an editor may edit invoices, but only inside their own tenant or only the ones they own.
 
-   ```python
-   def can_edit(user_id: int, owner_id: int) -> bool:
+    ```python
+    def can_edit(user_id: int, owner_id: int) -> bool:
        return user_id == owner_id
-   ```
+    ```
 
-3. What does the principle of least privilege mean in practice for a
-   service account's database credentials?
+- What does the principle of least privilege mean in practice for a
+    service account's database credentials?
 
-   **Answer:** Give the service only the database permissions it actually uses in production, nothing broader "just in case." A read-only reporting job should have `SELECT` access, not schema-change or admin rights.
+    **Answer:** Give the service only the database permissions it actually uses in production, nothing broader "just in case." A read-only reporting job should have `SELECT` access, not schema-change or admin rights.
 
-4. Where should authorization checks be enforced, and why is a client-side
-   (UI) check never sufficient on its own?
+- Where should authorization checks be enforced, and why is a client-side
+    (UI) check never sufficient on its own?
 
-   **Answer:** Enforce authorization on the server, ideally close to the endpoint or policy layer, because the client is fully under the caller's control. Hiding a button in the UI does not stop someone from calling the API directly.
+    **Answer:** Enforce authorization on the server, ideally close to the endpoint or policy layer, because the client is fully under the caller's control. Hiding a button in the UI does not stop someone from calling the API directly.
 
-5. Why is auditing authorization decisions (especially denials) valuable
-   even in a system that's otherwise working correctly?
+- Why is auditing authorization decisions (especially denials) valuable
+    even in a system that's otherwise working correctly?
 
-   **Answer:** It gives you a clean trail for incident response, support, and compliance work. When something looks off, you want logs that show who tried what, on which resource, and whether the check allowed it.
+    **Answer:** It gives you a clean trail for incident response, support, and compliance work. When something looks off, you want logs that show who tried what, on which resource, and whether the check allowed it.
 
 ## Senior-level considerations
 

@@ -177,57 +177,57 @@ carry vulnerabilities).
 
 ## Interview questions
 
-1. What problem do multi-stage builds solve that a single-stage
-   Dockerfile can't?
+- What problem do multi-stage builds solve that a single-stage
+    Dockerfile can't?
 
-   **Answer:** They let you use heavy build-time tooling without shipping it in the final image. In practice, you compile dependencies in one stage, then copy only the runtime artifacts into a smaller, cleaner image.
+    **Answer:** They let you use heavy build-time tooling without shipping it in the final image. In practice, you compile dependencies in one stage, then copy only the runtime artifacts into a smaller, cleaner image.
 
-   ```dockerfile
-   FROM python:3.12 AS builder
-   RUN apt-get update && apt-get install -y build-essential
-   FROM python:3.12-slim
-   COPY --from=builder /app/.venv /app/.venv
-   ```
+    ```dockerfile
+    FROM python:3.12 AS builder
+    RUN apt-get update && apt-get install -y build-essential
+    FROM python:3.12-slim
+    COPY --from=builder /app/.venv /app/.venv
+    ```
 
-2. How does `COPY --from=builder` work, and why is naming stages with
-   `AS` useful?
+- How does `COPY --from=builder` work, and why is naming stages with
+    `AS` useful?
 
-   **Answer:** It copies files from an earlier stage's filesystem, not from your laptop. Naming stages with `AS builder` makes the Dockerfile easier to read and safer to maintain than relying on numeric stage indexes.
+    **Answer:** It copies files from an earlier stage's filesystem, not from your laptop. Naming stages with `AS builder` makes the Dockerfile easier to read and safer to maintain than relying on numeric stage indexes.
 
-   ```dockerfile
-   FROM python:3.12 AS builder
-   FROM python:3.12-slim AS runtime
-   COPY --from=builder /app/.venv /app/.venv
-   ```
+    ```dockerfile
+    FROM python:3.12 AS builder
+    FROM python:3.12-slim AS runtime
+    COPY --from=builder /app/.venv /app/.venv
+    ```
 
-3. Why might a package need a `-dev` header package at build time but
-   only a plain runtime library at container runtime?
+- Why might a package need a `-dev` header package at build time but
+    only a plain runtime library at container runtime?
 
-   **Answer:** The compiler needs header files and development tooling to build the package, but once the binary is built, the app usually only needs the shared library to load it. A common example is compiling a PostgreSQL driver with `libpq-dev` and then running it with just `libpq5`.
+    **Answer:** The compiler needs header files and development tooling to build the package, but once the binary is built, the app usually only needs the shared library to load it. A common example is compiling a PostgreSQL driver with `libpq-dev` and then running it with just `libpq5`.
 
-   ```dockerfile
-   RUN apt-get install -y libpq-dev   # build stage
-   RUN apt-get install -y libpq5      # runtime stage
-   ```
+    ```dockerfile
+    RUN apt-get install -y libpq-dev   # build stage
+    RUN apt-get install -y libpq5      # runtime stage
+    ```
 
-4. What's the benefit of running your test suite as a build stage rather
-   than only as a separate CI step?
+- What's the benefit of running your test suite as a build stage rather
+    than only as a separate CI step?
 
-   **Answer:** It makes test success part of image creation, so a failing test means no image gets produced at all. That is useful as a hard safety rail, even if CI also runs the same tests separately.
+    **Answer:** It makes test success part of image creation, so a failing test means no image gets produced at all. That is useful as a hard safety rail, even if CI also runs the same tests separately.
 
-   ```dockerfile
-   RUN uv run pytest
-   ```
+    ```dockerfile
+    RUN uv run pytest
+    ```
 
-5. What real-world impact does a smaller final image size have beyond
-   just disk space?
+- What real-world impact does a smaller final image size have beyond
+    just disk space?
 
-   **Answer:** Smaller images pull faster, start faster on fresh nodes, and usually contain fewer packages to patch or scan for vulnerabilities. That matters more in real systems where many deployments and autoscaling events happen every day.
+    **Answer:** Smaller images pull faster, start faster on fresh nodes, and usually contain fewer packages to patch or scan for vulnerabilities. That matters more in real systems where many deployments and autoscaling events happen every day.
 
-   ```bash
-   docker image ls
-   docker pull my-api:latest
-   ```
+    ```bash
+    docker image ls
+    docker pull my-api:latest
+    ```
 
 ## Senior-level considerations
 

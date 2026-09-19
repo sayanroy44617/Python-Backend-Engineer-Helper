@@ -200,48 +200,48 @@ debugging.
 
 ## Interview questions
 
-1. Why does structured (JSON) logging matter more as a system scales,
-   compared to free-form text logs?
+- Why does structured (JSON) logging matter more as a system scales,
+    compared to free-form text logs?
 
-   **Answer:** Once logs from many instances land in one place, humans stop reading them line by line and tools need stable fields to filter and aggregate. JSON logs let you ask "show failed payments for `order_id=42`" without brittle regex parsing.
+    **Answer:** Once logs from many instances land in one place, humans stop reading them line by line and tools need stable fields to filter and aggregate. JSON logs let you ask "show failed payments for `order_id=42`" without brittle regex parsing.
 
-2. What's the practical difference between `logger.error(str(e))` and
-   `logger.exception(...)`, and why does it matter?
+- What's the practical difference between `logger.error(str(e))` and
+    `logger.exception(...)`, and why does it matter?
 
-   **Answer:** `logger.error(str(e))` records only the exception message, while `logger.exception(...)` also includes the traceback when called inside `except`. In production, that traceback is usually what tells you where the failure actually started.
+    **Answer:** `logger.error(str(e))` records only the exception message, while `logger.exception(...)` also includes the traceback when called inside `except`. In production, that traceback is usually what tells you where the failure actually started.
 
-   ```python
-   import logging
+    ```python
+    import logging
 
-   logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
-   try:
+    try:
        1 / 0
-   except ZeroDivisionError:
+    except ZeroDivisionError:
        logger.exception("calculation_failed")
-   ```
+    ```
 
-3. How would you correlate all log lines belonging to a single request
-   across multiple functions or services?
+- How would you correlate all log lines belonging to a single request
+    across multiple functions or services?
 
-   **Answer:** Generate a request ID at the edge, attach it to every log entry, and forward it to downstream services in headers or message metadata. That gives you one stable key to trace the request hop by hop.
+    **Answer:** Generate a request ID at the edge, attach it to every log entry, and forward it to downstream services in headers or message metadata. That gives you one stable key to trace the request hop by hop.
 
-4. Why is `contextvars` (rather than a plain global variable) the right
-   tool for storing a per-request correlation ID under async concurrency?
+- Why is `contextvars` (rather than a plain global variable) the right
+    tool for storing a per-request correlation ID under async concurrency?
 
-   **Answer:** A global gets shared by all in-flight requests, so concurrent work can overwrite the value and mix request IDs together. `contextvars` keeps per-task state isolated, which is what you need in async Python.
+    **Answer:** A global gets shared by all in-flight requests, so concurrent work can overwrite the value and mix request IDs together. `contextvars` keeps per-task state isolated, which is what you need in async Python.
 
-   ```python
-   import contextvars
+    ```python
+    import contextvars
 
-   request_id: contextvars.ContextVar[str] = contextvars.ContextVar("request_id")
-   request_id.set("req-123")
-   print(request_id.get())
-   ```
+    request_id: contextvars.ContextVar[str] = contextvars.ContextVar("request_id")
+    request_id.set("req-123")
+    print(request_id.get())
+    ```
 
-5. What kinds of data should never appear in application logs, and why?
+- What kinds of data should never appear in application logs, and why?
 
-   **Answer:** Don't log secrets, credentials, tokens, full payment data, or raw PII unless there's a strong, explicit reason and protection model. Logs usually get copied into multiple systems, so one bad log line can turn into a wide security or compliance problem.
+    **Answer:** Don't log secrets, credentials, tokens, full payment data, or raw PII unless there's a strong, explicit reason and protection model. Logs usually get copied into multiple systems, so one bad log line can turn into a wide security or compliance problem.
 
 ## Senior-level considerations
 

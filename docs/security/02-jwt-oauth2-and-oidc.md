@@ -198,43 +198,43 @@ for your service.
 
 ## Interview questions
 
-1. What does a JWT's signature actually protect against, and what does it
-   *not* protect against?
+- What does a JWT's signature actually protect against, and what does it
+    *not* protect against?
 
-   **Answer:** The signature proves the token was issued by someone holding the signing key and that the payload was not changed afterward. It does not hide the payload, so anyone holding the token can still read its claims.
+    **Answer:** The signature proves the token was issued by someone holding the signing key and that the payload was not changed afterward. It does not hide the payload, so anyone holding the token can still read its claims.
 
-2. Explain the JWT algorithm confusion vulnerability and how to prevent
-   it.
+- Explain the JWT algorithm confusion vulnerability and how to prevent
+    it.
 
-   **Answer:** The bug happens when the server trusts the token header to tell it how to verify the token, which lets an attacker switch algorithms and trick validation. The fix is simple: hard-code the allowed algorithms and key type on the server side.
+    **Answer:** The bug happens when the server trusts the token header to tell it how to verify the token, which lets an attacker switch algorithms and trick validation. The fix is simple: hard-code the allowed algorithms and key type on the server side.
 
-   ```python
-   import jwt
-   
-   payload: dict[str, str] = jwt.decode(token, public_key, algorithms=["RS256"])
-   ```
+    ```python
+    import jwt
+    
+    payload: dict[str, str] = jwt.decode(token, public_key, algorithms=["RS256"])
+    ```
 
-3. What's the difference between an access token and a refresh token, and
-   why are they typically stored/transported differently?
+- What's the difference between an access token and a refresh token, and
+    why are they typically stored/transported differently?
 
-   **Answer:** An access token is short-lived and sent on API calls; a refresh token is longer-lived and only used to get a new access token. Because a refresh token is effectively a session-renewal credential, teams usually keep it in a more protected place like an httpOnly secure cookie.
+    **Answer:** An access token is short-lived and sent on API calls; a refresh token is longer-lived and only used to get a new access token. Because a refresh token is effectively a session-renewal credential, teams usually keep it in a more protected place like an httpOnly secure cookie.
 
-4. What problem does OIDC solve that plain OAuth2 doesn't?
+- What problem does OIDC solve that plain OAuth2 doesn't?
 
-   **Answer:** OAuth2 tells you a client got delegated access; it does not standardize user identity. OIDC adds identity claims and standard endpoints so you can answer "who signed in?" instead of only "what can this token access?"
+    **Answer:** OAuth2 tells you a client got delegated access; it does not standardize user identity. OIDC adds identity claims and standard endpoints so you can answer "who signed in?" instead of only "what can this token access?"
 
-   ```python
-   id_token_claims: dict[str, str | bool] = {
+    ```python
+    id_token_claims: dict[str, str | bool] = {
        "sub": "123", "email": "dev@example.com", "email_verified": True
-   }
-   ```
+    }
+    ```
 
-5. Why is the Authorization Code flow (with PKCE) preferred over the
-   Password grant for third-party/browser-based clients?
+- Why is the Authorization Code flow (with PKCE) preferred over the
+    Password grant for third-party/browser-based clients?
 
-   **Answer:** It keeps the user's password with the identity provider instead of handing it to the client app, which is the big security win. PKCE also protects public clients like SPAs and mobile apps that cannot safely hold a client secret.
+    **Answer:** It keeps the user's password with the identity provider instead of handing it to the client app, which is the big security win. PKCE also protects public clients like SPAs and mobile apps that cannot safely hold a client secret.
 
-   Flow in plain English: browser goes to the identity provider, user logs in there, the app gets a short-lived code, then swaps that code for tokens.
+    Flow in plain English: browser goes to the identity provider, user logs in there, the app gets a short-lived code, then swaps that code for tokens.
 
 ## Senior-level considerations
 

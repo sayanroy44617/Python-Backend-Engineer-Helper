@@ -183,49 +183,49 @@ the total time across all retries.
 
 ## Interview questions
 
-1. What is a closure? Give an example where it's used to configure
-   behavior (like `make_multiplier`).
+- What is a closure? Give an example where it's used to configure
+    behavior (like `make_multiplier`).
 
-   **Answer:** A closure is a function that keeps access to variables from the outer scope after that outer function has returned. It's useful when you want to configure behavior once and reuse the configured callable many times.
+    **Answer:** A closure is a function that keeps access to variables from the outer scope after that outer function has returned. It's useful when you want to configure behavior once and reuse the configured callable many times.
 
-   ```python
-   def make_prefix(prefix: str):
+    ```python
+    def make_prefix(prefix: str):
        def format_name(name: str) -> str:
            return f"{prefix}{name}"
        return format_name
-   ```
+    ```
 
-2. Walk through what `@timed` on a function desugars to.
+- Walk through what `@timed` on a function desugars to.
 
-   **Answer:** `@timed` is just `my_func = timed(my_func)` after Python creates the original function object. The decorator gets the function, wraps it, and returns the replacement callable.
+    **Answer:** `@timed` is just `my_func = timed(my_func)` after Python creates the original function object. The decorator gets the function, wraps it, and returns the replacement callable.
 
-3. Why is `functools.wraps` important in a decorator?
+- Why is `functools.wraps` important in a decorator?
 
-   **Answer:** It preserves the wrapped function's metadata like `__name__`, `__doc__`, and annotations. That matters for debugging, logging, docs, FastAPI-style introspection, and any framework that inspects the function.
+    **Answer:** It preserves the wrapped function's metadata like `__name__`, `__doc__`, and annotations. That matters for debugging, logging, docs, FastAPI-style introspection, and any framework that inspects the function.
 
-4. What's a decorator factory, and how does `@retry(times=3)` differ from
-   `@retry`?
+- What's a decorator factory, and how does `@retry(times=3)` differ from
+    `@retry`?
 
-   **Answer:** A decorator factory is a function that returns a decorator, usually because you need configuration first. So `@retry(times=3)` means "build me a retry decorator with this config," while `@retry` would mean `retry` itself directly accepts the function.
+    **Answer:** A decorator factory is a function that returns a decorator, usually because you need configuration first. So `@retry(times=3)` means "build me a retry decorator with this config," while `@retry` would mean `retry` itself directly accepts the function.
 
-   ```python
-   def tag(label: str):
+    ```python
+    def tag(label: str):
        def decorator(func):
            return func
        return decorator
-   ```
+    ```
 
-5. In what order do stacked decorators apply?
+- In what order do stacked decorators apply?
 
-   **Answer:** They apply bottom-up: the decorator closest to the function runs first, then the one above it wraps that result. Read it like nested function calls.
+    **Answer:** They apply bottom-up: the decorator closest to the function runs first, then the one above it wraps that result. Read it like nested function calls.
 
-6. When would you write a class-based decorator instead of a function-based
-   one?
+- When would you write a class-based decorator instead of a function-based
+    one?
 
-   **Answer:** Use a class-based decorator when the wrapper needs richer state or behavior than a couple of closed-over variables. Good examples are counters, registries, or wrappers that need helper methods in addition to `__call__`.
+    **Answer:** Use a class-based decorator when the wrapper needs richer state or behavior than a couple of closed-over variables. Good examples are counters, registries, or wrappers that need helper methods in addition to `__call__`.
 
-   ```python
-   class Calls:
+    ```python
+    class Calls:
        def __init__(self, func) -> None:
            self.func = func
            self.count = 0
@@ -233,7 +233,7 @@ the total time across all retries.
        def __call__(self) -> str:
            self.count += 1
            return self.func()
-   ```
+    ```
 
 ## Senior-level considerations
 

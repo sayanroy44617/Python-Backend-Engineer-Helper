@@ -208,49 +208,49 @@ stale entry from its own local cache.
 
 ## Interview questions
 
-1. Why is deleting a cache entry on write generally safer than updating it
-   directly, under concurrent writes?
+- Why is deleting a cache entry on write generally safer than updating it
+    directly, under concurrent writes?
 
-   **Answer:** Updating the cache directly on write risks a race: two
-   concurrent writes can update the DB in one order but the cache in the
-   other, leaving the cache holding the *older* value. Deleting the entry
-   just forces the next read to fetch fresh from the DB — simpler and
-   avoids that ordering race.
+    **Answer:** Updating the cache directly on write risks a race: two
+    concurrent writes can update the DB in one order but the cache in the
+    other, leaving the cache holding the *older* value. Deleting the entry
+    just forces the next read to fetch fresh from the DB — simpler and
+    avoids that ordering race.
 
-2. What is a cache stampede, and how would you prevent one for a
-   high-traffic cache key?
+- What is a cache stampede, and how would you prevent one for a
+    high-traffic cache key?
 
-   **Answer:** A stampede happens when a hot cache key expires and many
-   concurrent requests all miss at once, all hammering the DB
-   simultaneously to refill it. Prevent it with a lock/single-flight
-   pattern (only one request recomputes, others wait for that result) or
-   by refreshing the value proactively before it expires.
+    **Answer:** A stampede happens when a hot cache key expires and many
+    concurrent requests all miss at once, all hammering the DB
+    simultaneously to refill it. Prevent it with a lock/single-flight
+    pattern (only one request recomputes, others wait for that result) or
+    by refreshing the value proactively before it expires.
 
-3. Why is a TTL still valuable even when you also invalidate explicitly on
-   every relevant write?
+- Why is a TTL still valuable even when you also invalidate explicitly on
+    every relevant write?
 
-   **Answer:** Explicit invalidation depends on every write path
-   correctly triggering it — a missed code path, bug, or out-of-band DB
-   change leaves stale data with no automatic expiry. A TTL guarantees a
-   worst-case staleness window regardless of whether invalidation logic
-   has a gap.
+    **Answer:** Explicit invalidation depends on every write path
+    correctly triggering it — a missed code path, bug, or out-of-band DB
+    change leaves stale data with no automatic expiry. A TTL guarantees a
+    worst-case staleness window regardless of whether invalidation logic
+    has a gap.
 
-4. How would you invalidate a cached aggregate (e.g. "top 10 products")
-   that doesn't correspond to a single entity's write?
+- How would you invalidate a cached aggregate (e.g. "top 10 products")
+    that doesn't correspond to a single entity's write?
 
-   **Answer:** Since no single write "owns" that key, rely on a short TTL
-   to naturally refresh it periodically, or explicitly invalidate it from
-   any write path that could plausibly affect the ranking (e.g. any order
-   placed).
+    **Answer:** Since no single write "owns" that key, rely on a short TTL
+    to naturally refresh it periodically, or explicitly invalidate it from
+    any write path that could plausibly affect the ranking (e.g. any order
+    placed).
 
-5. What extra consistency challenge does a per-instance local cache layer
-   introduce compared to a single shared Redis cache?
+- What extra consistency challenge does a per-instance local cache layer
+    introduce compared to a single shared Redis cache?
 
-   **Answer:** With a shared cache, one invalidation clears the value
-   everywhere. With per-instance local caches, invalidating on one
-   instance doesn't touch the copies held in other instances' memory —
-   you need a way to broadcast the invalidation to every instance (e.g. a
-   pub/sub message).
+    **Answer:** With a shared cache, one invalidation clears the value
+    everywhere. With per-instance local caches, invalidating on one
+    instance doesn't touch the copies held in other instances' memory —
+    you need a way to broadcast the invalidation to every instance (e.g. a
+    pub/sub message).
 
 ## Senior-level considerations
 

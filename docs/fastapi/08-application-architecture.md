@@ -165,50 +165,50 @@ lifespan setup, but doesn't contain business or route logic itself.
 
 ## Interview questions
 
-1. Why keep API routes, services, and repositories as separate layers
-   instead of one flat file?
+- Why keep API routes, services, and repositories as separate layers
+    instead of one flat file?
 
-   **Answer:** Because they change for different reasons: HTTP shape, business rules, and persistence are separate concerns. That separation keeps route handlers thin and lets you change storage or transport without rewriting everything.
+    **Answer:** Because they change for different reasons: HTTP shape, business rules, and persistence are separate concerns. That separation keeps route handlers thin and lets you change storage or transport without rewriting everything.
 
-2. Why shouldn't a service layer raise `HTTPException` directly?
+- Why shouldn't a service layer raise `HTTPException` directly?
 
-   **Answer:** `HTTPException` is a web concern, and putting it in services hard-couples business logic to FastAPI. A service should raise a domain error like `UserAlreadyExistsError`, and the API layer should translate that into the right status code.
+    **Answer:** `HTTPException` is a web concern, and putting it in services hard-couples business logic to FastAPI. A service should raise a domain error like `UserAlreadyExistsError`, and the API layer should translate that into the right status code.
 
-   ```python
-   class UserAlreadyExistsError(Exception):
+    ```python
+    class UserAlreadyExistsError(Exception):
        pass
 
-   def create_user(email_exists: bool) -> None:
+    def create_user(email_exists: bool) -> None:
        if email_exists:
            raise UserAlreadyExistsError()
-   ```
+    ```
 
-3. How does this layering make unit testing business logic easier?
+- How does this layering make unit testing business logic easier?
 
-   **Answer:** You can test the service with a fake repository directly, without HTTP requests, dependency injection, or a running app. That makes tests faster and much more targeted.
+    **Answer:** You can test the service with a fake repository directly, without HTTP requests, dependency injection, or a running app. That makes tests faster and much more targeted.
 
-   ```python
-   class FakeUserRepository:
+    ```python
+    class FakeUserRepository:
        def exists_by_email(self, email: str) -> bool:
            return False
-   ```
+    ```
 
-4. Why separate Pydantic schemas from ORM models instead of using one
-   class for both?
+- Why separate Pydantic schemas from ORM models instead of using one
+    class for both?
 
-   **Answer:** API contracts and database shape drift for different reasons, so forcing them into one class creates unnecessary coupling. Separate models let you change a column, hide an internal field, or version the API without dragging the persistence layer along.
+    **Answer:** API contracts and database shape drift for different reasons, so forcing them into one class creates unnecessary coupling. Separate models let you change a column, hide an internal field, or version the API without dragging the persistence layer along.
 
-5. How would you compose a chain of dependencies (`get_db` →
-   `get_user_repository` → `get_user_service`) using FastAPI's DI system?
+- How would you compose a chain of dependencies (`get_db` →
+    `get_user_repository` → `get_user_service`) using FastAPI's DI system?
 
-   **Answer:** Build one dependency per layer and let each one depend on the next lower layer. That keeps construction centralized and makes the route depend only on the service it actually needs.
+    **Answer:** Build one dependency per layer and let each one depend on the next lower layer. That keeps construction centralized and makes the route depend only on the service it actually needs.
 
-   ```python
-   from fastapi import Depends
+    ```python
+    from fastapi import Depends
 
-   def get_user_service(repo: UserRepository = Depends(get_user_repository)) -> UserService:
+    def get_user_service(repo: UserRepository = Depends(get_user_repository)) -> UserService:
        return UserService(repo)
-   ```
+    ```
 
 ## Senior-level considerations
 

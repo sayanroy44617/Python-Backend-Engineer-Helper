@@ -222,59 +222,59 @@ validating a chart before install.
 
 ## Interview questions
 
-1. What's the difference between `.Values`, `.Release`, and `.Chart` in
-   a Helm template?
+- What's the difference between `.Values`, `.Release`, and `.Chart` in
+    a Helm template?
 
-   **Answer:** `.Values` holds your configurable settings from `values.yaml`
-   (or `--set`), `.Release` holds info about this specific install/upgrade
-   (name, namespace, revision), and `.Chart` holds metadata about the chart
-   itself (name, version). They're just different built-in objects Helm
-   injects into every template.
+    **Answer:** `.Values` holds your configurable settings from `values.yaml`
+    (or `--set`), `.Release` holds info about this specific install/upgrade
+    (name, namespace, revision), and `.Chart` holds metadata about the chart
+    itself (name, version). They're just different built-in objects Helm
+    injects into every template.
 
-   ```yaml
-   name: {{ .Release.Name }}-{{ .Chart.Name }}
-   image: {{ .Values.image.repository }}
-   ```
+    ```yaml
+    name: {{ .Release.Name }}-{{ .Chart.Name }}
+    image: {{ .Values.image.repository }}
+    ```
 
-2. Why would you define a named template in `_helpers.tpl` instead of
-   repeating the same logic in each manifest template?
+- Why would you define a named template in `_helpers.tpl` instead of
+    repeating the same logic in each manifest template?
 
-   **Answer:** It's the DRY principle applied to Helm — write the logic
-   (like a standard label block) once, then call it from every manifest with
-   `{{ include "mychart.labels" . }}`. If the convention changes, you edit it
-   in one place instead of every file.
+    **Answer:** It's the DRY principle applied to Helm — write the logic
+    (like a standard label block) once, then call it from every manifest with
+    `{{ include "mychart.labels" . }}`. If the convention changes, you edit it
+    in one place instead of every file.
 
-3. How do environment-specific values files (e.g. `values-prod.yaml`)
-   interact with a chart's default `values.yaml`?
+- How do environment-specific values files (e.g. `values-prod.yaml`)
+    interact with a chart's default `values.yaml`?
 
-   **Answer:** Helm merges them, with later files overriding earlier ones —
-   `values.yaml` provides the defaults and `values-prod.yaml` only needs to
-   override what's different for production.
+    **Answer:** Helm merges them, with later files overriding earlier ones —
+    `values.yaml` provides the defaults and `values-prod.yaml` only needs to
+    override what's different for production.
 
-   ```bash
-   helm upgrade my-app ./chart -f values.yaml -f values-prod.yaml
-   ```
+    ```bash
+    helm upgrade my-app ./chart -f values.yaml -f values-prod.yaml
+    ```
 
-4. What's `helm template` useful for, and when would you use it instead
-   of `helm install --dry-run`?
+- What's `helm template` useful for, and when would you use it instead
+    of `helm install --dry-run`?
 
-   **Answer:** `helm template` renders manifests fully offline with no
-   cluster connection at all, which makes it great for CI linting, diffing,
-   or just reading output quickly. `--dry-run` actually talks to the API
-   server (for validation/admission checks) so it's closer to a real install.
+    **Answer:** `helm template` renders manifests fully offline with no
+    cluster connection at all, which makes it great for CI linting, diffing,
+    or just reading output quickly. `--dry-run` actually talks to the API
+    server (for validation/admission checks) so it's closer to a real install.
 
-5. How would you conditionally render an entire resource (like an
-   Ingress) based on a value?
+- How would you conditionally render an entire resource (like an
+    Ingress) based on a value?
 
-   **Answer:** Wrap the whole resource in an `{{- if .Values.ingress.enabled
-   }}` / `{{- end }}` block so the file only produces output when the flag
-   is true.
+    **Answer:** Wrap the whole resource in an `{{- if .Values.ingress.enabled
+    }}` / `{{- end }}` block so the file only produces output when the flag
+    is true.
 
-   ```yaml
-   {{- if .Values.ingress.enabled }}
-   kind: Ingress
-   {{- end }}
-   ```
+    ```yaml
+    {{- if .Values.ingress.enabled }}
+    kind: Ingress
+    {{- end }}
+    ```
 
 ## Senior-level considerations
 

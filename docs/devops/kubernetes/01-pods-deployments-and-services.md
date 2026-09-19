@@ -210,65 +210,65 @@ running unrelated services in separate Pods.
 
 ## Interview questions
 
-1. Why does Kubernetes rarely have you create bare Pods directly in
-   practice?
+- Why does Kubernetes rarely have you create bare Pods directly in
+    practice?
 
-   **Answer:** A bare Pod is just one running instance, with no controller
-   watching it. In real workloads you usually want a Deployment so failed Pods
-   get recreated automatically and updates can roll out safely.
+    **Answer:** A bare Pod is just one running instance, with no controller
+    watching it. In real workloads you usually want a Deployment so failed Pods
+    get recreated automatically and updates can roll out safely.
 
-   ```yaml
-   spec:
+    ```yaml
+    spec:
      replicas: 3
-   ```
+    ```
 
-2. How does a rolling update keep a service available throughout a
-   deployment, and what do `maxUnavailable`/`maxSurge` control?
+- How does a rolling update keep a service available throughout a
+    deployment, and what do `maxUnavailable`/`maxSurge` control?
 
-   **Answer:** Kubernetes replaces Pods gradually instead of taking every old
-   Pod down at once. `maxUnavailable` limits how many replicas can be missing
-   during the rollout, and `maxSurge` limits how many extra new Pods can be
-   created temporarily.
+    **Answer:** Kubernetes replaces Pods gradually instead of taking every old
+    Pod down at once. `maxUnavailable` limits how many replicas can be missing
+    during the rollout, and `maxSurge` limits how many extra new Pods can be
+    created temporarily.
 
-   ```yaml
-   rollingUpdate:
+    ```yaml
+    rollingUpdate:
      maxUnavailable: 0
      maxSurge: 1
-   ```
+    ```
 
-3. How does a Service know which Pods to route traffic to, given that
-   Pods are constantly being created and destroyed?
+- How does a Service know which Pods to route traffic to, given that
+    Pods are constantly being created and destroyed?
 
-   **Answer:** A Service does not track Pod names directly; it selects Pods by
-   label. As Pods come and go, Kubernetes keeps the Service's backend endpoint
-   list updated based on which current Pods match that selector.
+    **Answer:** A Service does not track Pod names directly; it selects Pods by
+    label. As Pods come and go, Kubernetes keeps the Service's backend endpoint
+    list updated based on which current Pods match that selector.
 
-   ```yaml
-   selector:
+    ```yaml
+    selector:
      app: api
-   ```
+    ```
 
-4. What's the difference between `ClusterIP`, `NodePort`, and
-   `LoadBalancer` Service types?
+- What's the difference between `ClusterIP`, `NodePort`, and
+    `LoadBalancer` Service types?
 
-   **Answer:** `ClusterIP` is for internal-only traffic inside the cluster.
-   `NodePort` opens a port on every node and is mostly used for simple setups,
-   while `LoadBalancer` asks the cloud provider for a real external load
-   balancer.
+    **Answer:** `ClusterIP` is for internal-only traffic inside the cluster.
+    `NodePort` opens a port on every node and is mostly used for simple setups,
+    while `LoadBalancer` asks the cloud provider for a real external load
+    balancer.
 
-5. When would a multi-container Pod (sidecar pattern) be appropriate, and
-   when is it an anti-pattern?
+- When would a multi-container Pod (sidecar pattern) be appropriate, and
+    when is it an anti-pattern?
 
-   **Answer:** It makes sense when the extra container is tightly tied to the
-   main app, like a log shipper or proxy that should start, stop, and move with
-   it. It becomes an anti-pattern when you put unrelated services together and
-   accidentally force them to share one lifecycle and scaling model.
+    **Answer:** It makes sense when the extra container is tightly tied to the
+    main app, like a log shipper or proxy that should start, stop, and move with
+    it. It becomes an anti-pattern when you put unrelated services together and
+    accidentally force them to share one lifecycle and scaling model.
 
-   ```yaml
-   containers:
+    ```yaml
+    containers:
      - name: api
      - name: log-shipper
-   ```
+    ```
 
 ## Senior-level considerations
 

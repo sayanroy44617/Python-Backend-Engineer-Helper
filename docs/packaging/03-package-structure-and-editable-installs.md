@@ -145,42 +145,42 @@ no matching wheel is available. Modern tooling produces both by default.
 
 ## Interview questions
 
-1. What problem does the `src` layout solve compared to a flat layout?
+- What problem does the `src` layout solve compared to a flat layout?
 
-   **Answer:** It stops your code from being accidentally importable just
-   because it happens to sit in the current working directory. With
-   `src/`, the package *must* be installed (even editable) before it can
-   be imported, which catches missing packaging config early instead of
-   in production.
+    **Answer:** It stops your code from being accidentally importable just
+    because it happens to sit in the current working directory. With
+    `src/`, the package *must* be installed (even editable) before it can
+    be imported, which catches missing packaging config early instead of
+    in production.
 
-2. What does `pip install -e .` actually do differently from a normal
-   install?
+- What does `pip install -e .` actually do differently from a normal
+    install?
 
-   **Answer:** A normal install copies files into `site-packages`; an
-   editable install points Python at your working source tree instead, so
-   edits to the source take effect immediately without reinstalling.
+    **Answer:** A normal install copies files into `site-packages`; an
+    editable install points Python at your working source tree instead, so
+    edits to the source take effect immediately without reinstalling.
 
-3. What's the difference between a wheel and an sdist?
+- What's the difference between a wheel and an sdist?
 
-   **Answer:** A wheel (`.whl`) is a prebuilt binary distribution — fast
-   to install, no build step needed. An sdist (`.tar.gz`) is raw source
-   that gets built at install time if no matching wheel exists.
+    **Answer:** A wheel (`.whl`) is a prebuilt binary distribution — fast
+    to install, no build step needed. An sdist (`.tar.gz`) is raw source
+    that gets built at install time if no matching wheel exists.
 
-4. Why might a project "work" locally with a flat layout but fail once
-   actually packaged and installed elsewhere?
+- Why might a project "work" locally with a flat layout but fail once
+    actually packaged and installed elsewhere?
 
-   **Answer:** Locally, Python can import the package straight from the
-   current directory even without a real install, hiding a broken or
-   missing `[build-system]`/package-discovery config. Once installed
-   properly elsewhere (Docker image, another machine), that "free"
-   cwd-relative import disappears and the app fails to find the package.
+    **Answer:** Locally, Python can import the package straight from the
+    current directory even without a real install, hiding a broken or
+    missing `[build-system]`/package-discovery config. Once installed
+    properly elsewhere (Docker image, another machine), that "free"
+    cwd-relative import disappears and the app fails to find the package.
 
-5. When would you *not* want an editable install (e.g. in CI/production)?
+- When would you *not* want an editable install (e.g. in CI/production)?
 
-   **Answer:** In CI/production you want to install a real, immutable
-   wheel/sdist (or lockfile-pinned build) so what's tested is exactly
-   what's deployed — an editable install ties the running code to a local
-   source tree that shouldn't exist in that environment.
+    **Answer:** In CI/production you want to install a real, immutable
+    wheel/sdist (or lockfile-pinned build) so what's tested is exactly
+    what's deployed — an editable install ties the running code to a local
+    source tree that shouldn't exist in that environment.
 
 ## Senior-level considerations
 

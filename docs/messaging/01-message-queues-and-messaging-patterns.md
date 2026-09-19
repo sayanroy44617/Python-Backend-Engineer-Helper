@@ -170,47 +170,47 @@ addresses this directly).
 
 ## Interview questions
 
-1. What's the practical difference between a point-to-point queue and a
-   publish/subscribe topic?
+- What's the practical difference between a point-to-point queue and a
+    publish/subscribe topic?
 
-   **Answer:** A point-to-point queue delivers each message to exactly
-   one consumer (competing consumers share the work). A pub/sub topic
-   delivers each message to every subscriber independently — one message
-   fans out to many, not to just one.
+    **Answer:** A point-to-point queue delivers each message to exactly
+    one consumer (competing consumers share the work). A pub/sub topic
+    delivers each message to every subscriber independently — one message
+    fans out to many, not to just one.
 
-2. Why does acknowledging a message only after successful processing
-   matter for reliability?
+- Why does acknowledging a message only after successful processing
+    matter for reliability?
 
-   **Answer:** If you ack (mark as done) before processing finishes and
-   the consumer crashes mid-processing, the message is lost forever —
-   the broker already thinks it was handled. Acking after success means a
-   crash leaves the message unacked, so it gets redelivered.
+    **Answer:** If you ack (mark as done) before processing finishes and
+    the consumer crashes mid-processing, the message is lost forever —
+    the broker already thinks it was handled. Acking after success means a
+    crash leaves the message unacked, so it gets redelivered.
 
-3. How does a message queue help absorb a sudden traffic spike that would
-   otherwise overwhelm a downstream service?
+- How does a message queue help absorb a sudden traffic spike that would
+    otherwise overwhelm a downstream service?
 
-   **Answer:** The queue holds incoming messages as a buffer, and the
-   downstream service pulls from it at its own sustainable pace — so a
-   burst of 10,000 requests doesn't have to be processed all at once, it
-   just makes the queue temporarily longer.
+    **Answer:** The queue holds incoming messages as a buffer, and the
+    downstream service pulls from it at its own sustainable pace — so a
+    burst of 10,000 requests doesn't have to be processed all at once, it
+    just makes the queue temporarily longer.
 
-4. What are the benefits of an event-driven fan-out architecture over
-   direct service-to-service calls?
+- What are the benefits of an event-driven fan-out architecture over
+    direct service-to-service calls?
 
-   **Answer:** The producer doesn't need to know or call every consumer
-   directly — it just publishes an event, and any number of services can
-   subscribe independently. Adding a new consumer later requires zero
-   changes to the producer.
+    **Answer:** The producer doesn't need to know or call every consumer
+    directly — it just publishes an event, and any number of services can
+    subscribe independently. Adding a new consumer later requires zero
+    changes to the producer.
 
-5. Why might strict message ordering be lost when multiple consumers
-   compete for messages on the same queue, and how would you preserve it
-   when needed?
+- Why might strict message ordering be lost when multiple consumers
+    compete for messages on the same queue, and how would you preserve it
+    when needed?
 
-   **Answer:** With multiple competing consumers, message B can finish
-   processing before message A if A happens to take longer — there's no
-   guarantee of who finishes first. To preserve order for related
-   messages, route them to the same consumer (e.g. by a partition/routing
-   key so all of one entity's events go to one worker).
+    **Answer:** With multiple competing consumers, message B can finish
+    processing before message A if A happens to take longer — there's no
+    guarantee of who finishes first. To preserve order for related
+    messages, route them to the same consumer (e.g. by a partition/routing
+    key so all of one entity's events go to one worker).
 
 ## Senior-level considerations
 

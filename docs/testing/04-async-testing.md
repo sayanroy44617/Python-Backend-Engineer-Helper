@@ -173,54 +173,54 @@ dependency causes a `TypeError` when the code under test tries to
 
 ## Interview questions
 
-1. Why does a plain `async def test_...` function silently "pass" without
-   `@pytest.mark.asyncio` or `asyncio_mode = "auto"` configured?
+- Why does a plain `async def test_...` function silently "pass" without
+    `@pytest.mark.asyncio` or `asyncio_mode = "auto"` configured?
 
-   **Answer:** Without pytest-asyncio driving it, pytest just calls the
-   `async def` function, gets back a coroutine object, and — since
-   nothing ever awaits it — the coroutine body never actually runs. The
-   test "passes" because no assertion inside it ever executed, not
-   because anything was verified.
+    **Answer:** Without pytest-asyncio driving it, pytest just calls the
+    `async def` function, gets back a coroutine object, and — since
+    nothing ever awaits it — the coroutine body never actually runs. The
+    test "passes" because no assertion inside it ever executed, not
+    because anything was verified.
 
-2. Why do you need `AsyncMock` instead of `Mock` for mocking an async
-   dependency? What error do you get if you use the wrong one?
+- Why do you need `AsyncMock` instead of `Mock` for mocking an async
+    dependency? What error do you get if you use the wrong one?
 
-   **Answer:** Calling a regular `Mock` returns a `Mock` object
-   immediately, which isn't awaitable — awaiting it raises `TypeError:
-   object Mock can't be used in 'await' expression`. `AsyncMock` returns
-   a coroutine when called, so `await` works correctly.
+    **Answer:** Calling a regular `Mock` returns a `Mock` object
+    immediately, which isn't awaitable — awaiting it raises `TypeError:
+    object Mock can't be used in 'await' expression`. `AsyncMock` returns
+    a coroutine when called, so `await` works correctly.
 
-3. How would you test that a piece of code times out correctly using
-   `asyncio.timeout`?
+- How would you test that a piece of code times out correctly using
+    `asyncio.timeout`?
 
-   **Answer:** Run the code against something that intentionally takes
-   longer than the timeout (e.g. `asyncio.sleep`) and assert that
-   `TimeoutError` is raised.
+    **Answer:** Run the code against something that intentionally takes
+    longer than the timeout (e.g. `asyncio.sleep`) and assert that
+    `TimeoutError` is raised.
 
-   ```python
-   import asyncio
-   import pytest
+    ```python
+    import asyncio
+    import pytest
 
-   async def test_times_out() -> None:
+    async def test_times_out() -> None:
        with pytest.raises(TimeoutError):
            async with asyncio.timeout(0.01):
                await asyncio.sleep(1)
-   ```
+    ```
 
-4. What's a risk with asserting on wall-clock elapsed time to verify
-   concurrent behavior in a test?
+- What's a risk with asserting on wall-clock elapsed time to verify
+    concurrent behavior in a test?
 
-   **Answer:** Wall-clock timing is sensitive to CI machine load/jitter —
-   a test asserting "this ran in under 100ms" can flake on a busy CI
-   runner even though the concurrency logic is correct.
+    **Answer:** Wall-clock timing is sensitive to CI machine load/jitter —
+    a test asserting "this ran in under 100ms" can flake on a busy CI
+    runner even though the concurrency logic is correct.
 
-5. How does testing an async FastAPI endpoint differ from testing a
-   synchronous one?
+- How does testing an async FastAPI endpoint differ from testing a
+    synchronous one?
 
-   **Answer:** You typically use an async HTTP test client (e.g.
-   `httpx.AsyncClient`) and `await` its calls inside an `async def` test,
-   instead of a plain synchronous `TestClient` call — the test itself
-   needs to run inside the event loop pytest-asyncio manages.
+    **Answer:** You typically use an async HTTP test client (e.g.
+    `httpx.AsyncClient`) and `await` its calls inside an `async def` test,
+    instead of a plain synchronous `TestClient` call — the test itself
+    needs to run inside the event loop pytest-asyncio manages.
 
 ## Senior-level considerations
 

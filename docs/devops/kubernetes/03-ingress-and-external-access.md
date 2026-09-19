@@ -178,63 +178,63 @@ portable to another without adjustment.
 
 ## Interview questions
 
-1. What's the relationship between the Ingress object and an Ingress
-   controller — why doesn't Ingress work without one installed?
+- What's the relationship between the Ingress object and an Ingress
+    controller — why doesn't Ingress work without one installed?
 
-   **Answer:** The Ingress object is only a routing definition stored in the
-   Kubernetes API. An Ingress controller is the component that watches that
-   definition and actually configures NGINX, Traefik, or a cloud load balancer
-   to enforce it.
+    **Answer:** The Ingress object is only a routing definition stored in the
+    Kubernetes API. An Ingress controller is the component that watches that
+    definition and actually configures NGINX, Traefik, or a cloud load balancer
+    to enforce it.
 
-2. Why is Ingress (Layer 7) able to do host/path-based routing that a
-   plain `LoadBalancer` Service (Layer 4) cannot?
+- Why is Ingress (Layer 7) able to do host/path-based routing that a
+    plain `LoadBalancer` Service (Layer 4) cannot?
 
-   **Answer:** Layer 7 routing understands HTTP details like the Host header and
-   URL path, so it can send `/users` and `/orders` to different backends. A
-   plain Layer 4 load balancer only forwards TCP/UDP traffic by IP and port,
-   without inspecting HTTP semantics.
+    **Answer:** Layer 7 routing understands HTTP details like the Host header and
+    URL path, so it can send `/users` and `/orders` to different backends. A
+    plain Layer 4 load balancer only forwards TCP/UDP traffic by IP and port,
+    without inspecting HTTP semantics.
 
-   ```yaml
-   - path: /users
+    ```yaml
+    - path: /users
      backend:
        service:
          name: users-service
-   ```
+    ```
 
-3. Where does TLS termination typically happen in a Kubernetes cluster,
-   and what tool commonly automates certificate management there?
+- Where does TLS termination typically happen in a Kubernetes cluster,
+    and what tool commonly automates certificate management there?
 
-   **Answer:** TLS usually terminates at the Ingress controller, which handles
-   HTTPS before forwarding traffic to internal Services. `cert-manager` is the
-   common tool used to request, renew, and rotate those certificates
-   automatically.
+    **Answer:** TLS usually terminates at the Ingress controller, which handles
+    HTTPS before forwarding traffic to internal Services. `cert-manager` is the
+    common tool used to request, renew, and rotate those certificates
+    automatically.
 
-   ```yaml
-   tls:
+    ```yaml
+    tls:
      - hosts: [api.example.com]
        secretName: api-tls-cert
-   ```
+    ```
 
-4. Why might Ingress annotations written for one controller not work
-   after switching to a different one?
+- Why might Ingress annotations written for one controller not work
+    after switching to a different one?
 
-   **Answer:** Annotations are often controller-specific extensions, not part of
-   the core Kubernetes Ingress spec. So an NGINX annotation for rate limiting,
-   rewrites, or timeouts may simply be ignored by ALB or Traefik.
+    **Answer:** Annotations are often controller-specific extensions, not part of
+    the core Kubernetes Ingress spec. So an NGINX annotation for rate limiting,
+    rewrites, or timeouts may simply be ignored by ALB or Traefik.
 
-5. When would you still use a `LoadBalancer` Service directly instead of
-   routing through an Ingress?
+- When would you still use a `LoadBalancer` Service directly instead of
+    routing through an Ingress?
 
-   **Answer:** You would still use it for non-HTTP traffic like raw TCP or UDP,
-   or for a very simple service that just needs direct external exposure. For
-   example, a public PostgreSQL proxy or game server would not fit the normal
-   HTTP-focused Ingress model.
+    **Answer:** You would still use it for non-HTTP traffic like raw TCP or UDP,
+    or for a very simple service that just needs direct external exposure. For
+    example, a public PostgreSQL proxy or game server would not fit the normal
+    HTTP-focused Ingress model.
 
-   ```yaml
-   kind: Service
-   spec:
+    ```yaml
+    kind: Service
+    spec:
      type: LoadBalancer
-   ```
+    ```
 
 ## Senior-level considerations
 
