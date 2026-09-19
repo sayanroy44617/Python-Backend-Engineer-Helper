@@ -207,6 +207,7 @@ both.
 
    asyncio.run(main())
    ```
+
 2. Why does calling a blocking function like `time.sleep()` inside an
    `async def` function affect the entire application, not just the
    current request?
@@ -214,6 +215,7 @@ both.
    **Answer:** The event loop is usually one thread, so a blocking call
    stops that one thread from running every other coroutine too. In a web
    service, that means unrelated requests get stuck behind the bad call.
+
 3. When would you use `multiprocessing` instead of (or alongside)
    `asyncio`?
 
@@ -221,6 +223,7 @@ both.
    multiple cores, like image transforms or big JSON/data crunching. A
    common pattern is `asyncio` for network concurrency and a process pool
    for the CPU-heavy step.
+
 4. What does `asyncio.TaskGroup` provide over manually tracking tasks with
    `create_task`?
 
@@ -228,6 +231,7 @@ both.
    are tracked, awaited, and cancelled together if one fails. It removes a
    lot of the error-handling and cleanup footguns from ad hoc task
    management.
+
 5. How would you offload CPU-bound work from an async FastAPI handler
    without blocking the event loop?
 
@@ -246,6 +250,7 @@ both.
 
    asyncio.run(main())
    ```
+
 6. What's the "fire and forget" task bug, and how do you avoid it?
 
    **Answer:** It's when code starts a task and never keeps track of it, so

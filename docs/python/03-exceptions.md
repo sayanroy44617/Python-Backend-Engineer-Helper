@@ -296,6 +296,7 @@ def risky() -> str:
    except Exception:
        print("handled")
    ```
+
 2. What does `raise ... from exc` do, and why is it useful?
 
    **Answer:** It explicitly chains a higher-level exception to the original
@@ -308,6 +309,7 @@ def risky() -> str:
    except ValueError as exc:
        raise ValueError("invalid user id") from exc
    ```
+
 3. When does `else` in a try/except block execute, versus putting that code
    directly after the `try`?
 
@@ -322,12 +324,14 @@ def risky() -> str:
    else:
        print(value)
    ```
+
 4. Why is `except Exception: pass` considered a serious anti-pattern in
    production code?
 
    **Answer:** It hides real failures and removes the signal you need for
    debugging, alerting, and retries. In production, swallowed exceptions often
    turn into silent data loss or stuck workflows.
+
 5. How would you design an exception hierarchy for a service with multiple
    failure modes (not found, validation, permission denied)?
 
@@ -340,6 +344,7 @@ def risky() -> str:
    class NotFoundError(DomainError): ...
    class PermissionDeniedError(DomainError): ...
    ```
+
 6. What happens if a `finally` block contains a `return` statement while an
    exception is propagating?
 
@@ -353,12 +358,14 @@ def risky() -> str:
        finally:
            return "hidden"
    ```
+
 7. What's the difference between `raise` (bare) and `raise exc` inside an
    `except` block?
 
    **Answer:** Bare `raise` re-raises the current exception and preserves the
    original traceback. `raise exc` raises that exception object again and can
    make the traceback noisier or less direct.
+
 8. What does returning `True` from `__exit__` do, and why is it risky?
 
    **Answer:** It tells the context manager to suppress the exception instead
@@ -370,6 +377,7 @@ def risky() -> str:
        def __exit__(self, exc_type, exc, tb) -> bool:
            return True
    ```
+
 9. Give an example of a built-in exception that is a subclass of another
    built-in exception (e.g. `IndexError` vs `LookupError`) — why does that
    hierarchy matter when writing a broad `except` clause?
@@ -384,6 +392,7 @@ def risky() -> str:
    except LookupError:
        print("lookup failed")
    ```
+
 10. What does `raise ... from None` do, and when would you use it over
     `raise ... from exc`?
 

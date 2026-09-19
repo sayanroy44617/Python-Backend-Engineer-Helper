@@ -189,6 +189,10 @@ FROM orders;
 3. How would you compute a running total per user using a window
    function?
 
+   **Answer:** Use `SUM(...) OVER (PARTITION BY ... ORDER BY ...)` — the
+   `PARTITION BY` restarts the total per user, and `ORDER BY` makes it
+   accumulate row by row instead of summing the whole partition at once.
+
    ```sql
    SELECT user_id, order_date, amount,
           SUM(amount) OVER (
@@ -207,6 +211,11 @@ FROM orders;
 
 5. How would you query a hierarchical structure (e.g. an org chart) using
    a recursive CTE?
+
+   **Answer:** Define an anchor member (the root rows, e.g.
+   `manager_id IS NULL`), then a recursive member that joins the CTE back
+   to the base table to walk one level deeper each iteration, until no
+   more matching rows are found.
 
    ```sql
    WITH RECURSIVE org_chart AS (

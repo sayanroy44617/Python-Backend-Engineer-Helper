@@ -378,6 +378,7 @@ nums = [n for n in nums if n % 2 != 0]
    print(a == b)  # True
    print(a is b)  # False
    ```
+
 2. Why is a mutable default argument a bug? How do you fix it?
 
    **Answer:** The default object is created once at function definition time,
@@ -390,6 +391,7 @@ nums = [n for n in nums if n % 2 != 0]
        tags.append(tag)
        return tags
    ```
+
 3. When would you choose a `tuple` over a `list`?
 
    **Answer:** Use a `tuple` when the shape should not change and immutability
@@ -400,6 +402,7 @@ nums = [n for n in nums if n % 2 != 0]
    location: tuple[float, float] = (12.97, 77.59)
    cache_key: tuple[str, int] = ("user", 42)
    ```
+
 4. What's the time complexity of membership testing (`in`) for a `list` vs a
    `set`? Why?
 
@@ -410,6 +413,7 @@ nums = [n for n in nums if n % 2 != 0]
    allowed_ids: set[int] = {1, 2, 3}
    print(3 in allowed_ids)  # True
    ```
+
 5. Explain shallow vs deep copy with an example involving nested structures.
 
    **Answer:** A shallow copy creates a new outer container but keeps nested
@@ -423,6 +427,7 @@ nums = [n for n in nums if n % 2 != 0]
    shallow = data.copy()
    deep = copy.deepcopy(data)
    ```
+
 6. Why can't you use a `list` as a dictionary key?
 
    **Answer:** Dict keys must be hashable, and a `list` is mutable so its value
@@ -433,6 +438,7 @@ nums = [n for n in nums if n % 2 != 0]
    key: tuple[str, int] = ("user", 1)
    cache: dict[tuple[str, int], str] = {key: "hit"}
    ```
+
 7. What's the difference between `dict.get(key)` and `dict[key]` when the
    key is missing?
 
@@ -444,6 +450,7 @@ nums = [n for n in nums if n % 2 != 0]
    config: dict[str, str] = {"env": "prod"}
    print(config.get("region", "us-east-1"))
    ```
+
 8. What does `dict.setdefault()` do, and how is it useful for grouping
    items by a key?
 
@@ -456,6 +463,7 @@ nums = [n for n in nums if n % 2 != 0]
    for name in ["ana", "bo", "aria"]:
        grouped.setdefault(name[0], []).append(name)
    ```
+
 9. What's the difference between `list.sort()` and the built-in
    `sorted()`?
 
@@ -468,6 +476,7 @@ nums = [n for n in nums if n % 2 != 0]
    ordered = sorted(scores)
    print(scores, ordered)
    ```
+
 10. When would you reach for `collections.defaultdict` or
     `collections.Counter` instead of a plain `dict`?
 
@@ -481,6 +490,7 @@ nums = [n for n in nums if n % 2 != 0]
    counts: Counter[str] = Counter(["ok", "ok", "fail"])
    print(counts["ok"])  # 2
    ```
+
 11. Why is `deque` preferred over `list` for a queue that needs to pop
     from the front frequently?
 

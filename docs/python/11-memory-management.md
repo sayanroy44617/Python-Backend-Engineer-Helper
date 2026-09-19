@@ -166,6 +166,7 @@ added back explicitly).
    predictably. It does not handle cycles, because objects in a cycle can
    keep each other's counts above zero even when nothing else can reach
    them.
+
 2. Why does a parent/child object graph with back-references need the
    cyclic garbage collector?
 
@@ -179,6 +180,7 @@ added back explicitly).
        def __init__(self) -> None:
            self.other: "Node | None" = None
    ```
+
 3. What's the purpose of `weakref`, and when would you use it?
 
    **Answer:** `weakref` lets you point at an object without keeping it
@@ -194,12 +196,14 @@ added back explicitly).
 
    cache: weakref.WeakValueDictionary[str, User] = weakref.WeakValueDictionary()
    ```
+
 4. What memory trade-off does `__slots__` make, and when is it worth it?
 
    **Answer:** `__slots__` saves memory by removing the per-instance
    `__dict__`, but you give up dynamic attributes unless you add them back
    explicitly. It's worth it when you have a lot of small, fixed-shape
    objects and profiling shows instance overhead matters.
+
 5. Why shouldn't you routinely call `gc.collect()` in application code?
 
    **Answer:** Forcing collection on the hot path adds scanning work and

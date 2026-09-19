@@ -185,6 +185,7 @@ re-create the generator.
    iterator = iter(items)
    print(next(iterator))  # 1
    ```
+
 2. How does a `for` loop use `iter()` and `next()` under the hood?
 
    **Answer:** `for` first calls `iter(obj)`, then keeps calling `next()` until it gets `StopIteration`. That's why anything implementing the iterator protocol works in a normal loop.
@@ -194,6 +195,7 @@ re-create the generator.
    print(next(values))  # 10
    print(next(values))  # 20
    ```
+
 3. Why are generators more memory-efficient than returning a list? Give a
    backend example.
 
@@ -206,6 +208,7 @@ re-create the generator.
        for user_id in range(1_000_000):
            yield user_id
    ```
+
 4. What does `yield from` do, and why is it useful when composing
    generators?
 
@@ -217,6 +220,7 @@ re-create the generator.
    def child() -> Iterator[int]:
        yield from [1, 2]
    ```
+
 5. Can you iterate a generator twice? What happens if you try?
 
    **Answer:** No — a generator is single-use. Once it's exhausted, iterating it again gives you nothing unless you create a fresh generator object.
@@ -226,6 +230,7 @@ re-create the generator.
    print(list(gen))  # [0, 1]
    print(list(gen))  # []
    ```
+
 6. What's the difference between `next(gen)` and `gen.send(value)`?
 
    **Answer:** `next(gen)` just resumes the generator and asks for the next yielded value. `send(value)` also resumes it, but injects a value back into the paused `yield` expression.

@@ -187,6 +187,7 @@ integrations issued limited-scope tokens.
        if not is_admin:
            raise HTTPException(status_code=403, detail="Admin role required")
    ```
+
 2. What does `OAuth2PasswordBearer` actually do, and what does it *not* do?
 
    **Answer:** It pulls the bearer token out of the `Authorization` header and marks the route as secured in OpenAPI. It does not verify signature, expiry, issuer, or load the user for you.
@@ -200,6 +201,7 @@ integrations issued limited-scope tokens.
    def read_token(token: str = Depends(oauth2_scheme)) -> dict[str, str]:
        return {"token": token}
    ```
+
 3. How would you implement a reusable "require this role" check across
    many routes?
 
@@ -214,10 +216,12 @@ integrations issued limited-scope tokens.
                raise HTTPException(status_code=403, detail="Forbidden")
        return dependency
    ```
+
 4. Why should token validation happen in a dependency rather than inline
    in every route?
 
    **Answer:** Because auth is cross-cutting plumbing, not route-specific business logic. A dependency gives you one place to validate tokens, load the user, and apply the same behavior consistently across every protected endpoint.
+
 5. What are OAuth2 scopes, and when would you use them over simple role
    checks?
 

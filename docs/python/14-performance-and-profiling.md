@@ -171,12 +171,14 @@ Distinguishing CPU-bound from I/O-bound is the deciding factor for whether
    **Answer:** Because the obvious-looking slow code is often not the real
    bottleneck. A common miss is rewriting a Python loop for speed when the
    endpoint is actually spending most of its time waiting on the database.
+
 2. What's the difference between what `cProfile` and `tracemalloc` each
    measure?
 
    **Answer:** `cProfile` shows where execution time goes, function by
    function. `tracemalloc` shows where memory allocations come from, which
    is what you want when memory keeps climbing.
+
 3. How would you diagnose whether a slow endpoint is CPU-bound or
    I/O-bound?
 
@@ -185,6 +187,7 @@ Distinguishing CPU-bound from I/O-bound is the deciding factor for whether
    socket, DB, HTTP, or waiting time, it is I/O-bound. Pair Python
    profiling with SQL/query timing or tracing so you do not miss external
    waits.
+
 4. What is the N+1 query problem, and why might it not show up clearly in
    a Python-level profiler?
 
@@ -197,6 +200,7 @@ Distinguishing CPU-bound from I/O-bound is the deciding factor for whether
    for user_id in user_ids:
        load_orders(user_id)  # one extra DB call per user
    ```
+
 5. What's the difference between micro-benchmarking (`timeit`) and
    whole-program profiling (`cProfile`)?
 

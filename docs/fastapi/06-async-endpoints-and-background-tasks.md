@@ -161,6 +161,7 @@ connections under load and defeats the purpose of pooling entirely.
    def parse_report() -> dict[str, bool]:
        return {"ok": True}
    ```
+
 2. Why would a blocking call inside `async def` be worse than the same
    call inside plain `def`?
 
@@ -173,6 +174,7 @@ connections under load and defeats the purpose of pooling entirely.
        time.sleep(1)
        return {"ok": True}
    ```
+
 3. What is `BackgroundTasks` appropriate for, and where does it fall short
    compared to a real task queue?
 
@@ -184,10 +186,12 @@ connections under load and defeats the purpose of pooling entirely.
    def enqueue_email(background_tasks: BackgroundTasks, email: str) -> None:
        background_tasks.add_task(print, f"send welcome email to {email}")
    ```
+
 4. Why should a DB connection pool be created in `lifespan` rather than
    inside each request handler?
 
    **Answer:** A pool is meant to be long-lived and shared; creating one per request defeats pooling and can burn through database connections fast. `lifespan` gives you one setup point at startup and one cleanup point at shutdown.
+
 5. What replaced `@app.on_event("startup")`, and what problem did that
    change solve?
 

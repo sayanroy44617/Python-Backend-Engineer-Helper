@@ -186,10 +186,12 @@ dedicated tests).
    class UserOut(BaseModel):
        id: int
    ```
+
 2. Why is `TestClient` generally faster and more reliable than spinning up
    a real server for tests?
 
    **Answer:** It calls the ASGI app in-process, so there is no real socket, no process management, and less test flakiness. You still exercise routing, validation, dependencies, and exception handling, which is what most route tests actually need.
+
 3. How would you test a route that requires authentication without
    generating a real token in every test?
 
@@ -200,10 +202,12 @@ dedicated tests).
    response = client.get("/me")
    assert response.status_code == 200
    ```
+
 4. What's the risk of not resetting `app.dependency_overrides` between
    tests?
 
    **Answer:** Overrides leak across test cases, so one test can accidentally change the behavior of another. That gives you false positives, confusing failures, and order-dependent tests.
+
 5. When would you reach for `httpx.AsyncClient` over the standard
    `TestClient`?
 

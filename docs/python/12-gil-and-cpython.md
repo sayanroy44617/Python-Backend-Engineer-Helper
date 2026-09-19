@@ -141,12 +141,14 @@ own interpreter and its own GIL.
    counting safe by allowing only one thread to run Python bytecode at a
    time. It exists mostly to keep the runtime simpler and object memory
    management thread-safe.
+
 2. Why do threads help I/O-bound Python code but not CPU-bound code?
 
    **Answer:** I/O-bound threads spend most of their time waiting on the
    network, disk, or sleep calls, and those waits release the GIL so other
    threads can run. CPU-bound Python code keeps wanting the GIL to execute
    bytecode, so threads mostly take turns instead of using multiple cores.
+
 3. How does `asyncio` achieve concurrency without multiple OS threads?
 
    **Answer:** `asyncio` runs one event loop that switches between
@@ -161,18 +163,21 @@ own interpreter and its own GIL.
 
    asyncio.run(main())
    ```
+
 4. When would you choose `multiprocessing` over `asyncio` or threads?
 
    **Answer:** Use `multiprocessing` when the bottleneck is real CPU work
    and you need multiple cores, like image processing or large batch
    computations. Each process gets its own interpreter and GIL, so the
    work can run in parallel.
+
 5. Is the GIL part of the Python language spec, or a CPython
    implementation detail? Why does that distinction matter?
 
    **Answer:** The GIL is a CPython runtime detail, not a Python language
    guarantee. That matters because different implementations or newer
    CPython builds can have different threading behavior.
+
 6. What happens if you run CPU-bound work inside an `async def` FastAPI
    route without offloading it?
 

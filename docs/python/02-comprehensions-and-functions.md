@@ -284,6 +284,7 @@ funcs = [lambda i=i: i for i in range(3)]
        x: str = "enclosing"
        return x
    ```
+
 2. What's the difference between a list comprehension and a generator
    expression? When does the difference matter?
 
@@ -295,6 +296,7 @@ funcs = [lambda i=i: i for i in range(3)]
    nums: list[int] = [n * n for n in range(3)]
    total: int = sum(n * n for n in range(3))
    ```
+
 3. Explain the late-binding closure bug with loop variables and how to fix
    it.
 
@@ -306,6 +308,7 @@ funcs = [lambda i=i: i for i in range(3)]
    funcs = [lambda i=i: i for i in range(3)]
    print([fn() for fn in funcs])  # [0, 1, 2]
    ```
+
 4. What happens if you mutate a variable from an enclosing scope without
    `nonlocal`?
 
@@ -324,6 +327,7 @@ funcs = [lambda i=i: i for i in range(3)]
            return count
        return inc
    ```
+
 5. Why would you make an argument keyword-only?
 
    **Answer:** Keyword-only params make calls clearer and harder to misuse,
@@ -334,6 +338,7 @@ funcs = [lambda i=i: i for i in range(3)]
    def fetch_user(user_id: int, *, include_deleted: bool = False) -> None:
        pass
    ```
+
 6. How do `*args` and `**kwargs` work under the hood (tuple/dict packing)?
 
    **Answer:** Extra positional args are packed into a tuple, and extra keyword
@@ -344,6 +349,7 @@ funcs = [lambda i=i: i for i in range(3)]
    def log_call(*args: object, **kwargs: object) -> tuple[tuple[object, ...], dict[str, object]]:
        return args, kwargs
    ```
+
 7. What's the difference between `*args` in a function *definition* versus
    `*some_list` at a *call site*?
 
@@ -357,6 +363,7 @@ funcs = [lambda i=i: i for i in range(3)]
    values: list[int] = [2, 3]
    print(add(*values))
    ```
+
 8. Why is `def f(x, timestamp=datetime.now())` a bug? How do you fix it?
 
    **Answer:** `datetime.now()` runs once when the function is defined, not on
@@ -369,6 +376,7 @@ funcs = [lambda i=i: i for i in range(3)]
    def stamp(ts: datetime | None = None) -> datetime:
        return ts or datetime.now()
    ```
+
 9. What does `/` mean in a function signature, and where have you seen it
    used in the standard library?
 
@@ -380,6 +388,7 @@ funcs = [lambda i=i: i for i in range(3)]
    def move(x: int, y: int, /) -> tuple[int, int]:
        return x, y
    ```
+
 10. When would you reach for `functools.partial` instead of a `lambda`?
 
    **Answer:** Use `partial` when you just want to pre-fill some arguments of

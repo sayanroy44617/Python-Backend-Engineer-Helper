@@ -192,6 +192,10 @@ COUNT(*), COUNT(DISTINCT user_id), SUM(total), AVG(total), MIN(total), MAX(total
 4. How would you find users with more than 10 orders using `GROUP BY`/
    `HAVING`?
 
+   **Answer:** Group by `user_id`, aggregate with `COUNT(*)`, and filter
+   the grouped result with `HAVING`, since the count only exists after
+   grouping.
+
    ```sql
    SELECT user_id, COUNT(*) AS order_count
    FROM orders
