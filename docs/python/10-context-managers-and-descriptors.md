@@ -66,6 +66,106 @@ Code before `yield` is `__enter__`; code after (in `finally`) is
 `__exit__`. This is the concise, most common way to write a custom context
 manager without a full class.
 
+### Real-world example: FastAPI + DB transaction context manager
+
+The naive version — every endpoint opens a connection and hopes for the best:
+
+```python
+@app.put("/orders/{order_id}")
+def update_order(order_id: int, data: OrderUpdate) -> dict:
+    conn = db_driver.connect()
+    conn.execute("UPDATE orders SET qty = ? WHERE id = ?", (data.qty, order_id))
+    return {"ok": True}
+    # if execute() raises, conn is never closed
+    # 1,000 requests later: 1,000 leaked connections, DB connection pool exhausted
+```
+
+Fix it once, with a context manager that commits on success and rolls
+back + closes on any failure:
+
+```python
+from contextlib import contextmanager
+from collections.abc import Iterator
+
+import db_driver
+
+@contextmanager
+def get_db() -> Iterator[db_driver.Connection]:
+    conn = db_driver.connect()
+    try:
+        yield conn          # endpoint body runs here
+        conn.commit()        # success -> persist changes
+    except Exception:
+        conn.rollback()      # failure -> undo partial changes
+        raise                # don't swallow the error
+    finally:
+        conn.close()         # always released, leak-proof
+```
+
+Every endpoint now just says `with get_db()`:
+
+```python
+@app.post("/orders")
+def create_order(data: OrderCreate) -> dict:
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO orders (item, qty) VALUES (?, ?)", (data.item, data.qty)
+        )
+    return {"ok": True}
+
+@app.put("/orders/{order_id}")
+def update_order(order_id: int, data: OrderUpdate) -> dict:
+    with get_db() as conn:
+        conn.execute("UPDATE orders SET qty = ? WHERE id = ?", (data.qty, order_id))
+    return {"ok": True}
+```
+
+**Happy path** (the `UPDATE` succeeds):
+
+```text
+with get_db() as conn:   -> connect
+    execute UPDATE       -> runs at `yield conn`
+                          -> commit   (changes saved)
+                          -> close    (connection released)
+return {"ok": True}
+```
+
+**Failure path** (bad data, deadlock, DB down):
+
+```text
+with get_db() as conn:   -> connect
+    execute UPDATE       -> raises
+                          -> rollback (partial changes undone)
+                          -> close    (connection still released, not leaked)
+                          -> exception propagates -> FastAPI returns 500
+```
+
+The caller gets an error either way, but the DB is left clean (no
+half-updated rows) and the connection pool is intact — that's the entire
+value of wrapping the transaction.
+
+The same context manager also buys atomicity across multiple statements.
+Fulfilling an order needs to update both `orders` and `inventory` —
+either both succeed or neither does:
+
+```python
+@app.put("/orders/{order_id}/fulfil")
+def fulfil_order(order_id: int) -> dict:
+    with get_db() as conn:
+        conn.execute("UPDATE orders SET status = 'shipped' WHERE id = ?", (order_id,))
+        conn.execute(
+            "UPDATE inventory SET stock = stock - 1 WHERE item = ?",
+            (get_item(order_id),),
+        )
+        # if this second statement fails (e.g. no stock), the whole
+        # transaction rolls back: status reverts, stock is untouched
+    return {"ok": True}
+```
+
+Without the shared transaction, a mid-failure leaves the order marked
+"shipped" with inventory never decremented — a classic data-corruption
+bug that's easy to introduce and hard to debug in production.
+
 ### Multiple and nested context managers
 
 ```python
